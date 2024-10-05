@@ -12,6 +12,17 @@ body {
   }
 }
 
+main {
+  padding: 16px;
+}
+
+/* Ensure the sidebar remains visible on larger screens */
+@media (min-width: 768px) {
+  .sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
