@@ -20,7 +20,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
 
   return (
     <div
-      className={`w-64 bg-blue-800 text-white p-6 fixed inset-y-0 left-0 transform rounded-tr-2xl rounded-br-2xl z-30
+      className={`w-64 bg-blue-900 text-white p-6 fixed inset-y-0 left-0 transform rounded-tr-2xl rounded-br-2xl z-30
       ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       md:translate-x-0 transition-transform duration-200 ease-in-out`}
     >

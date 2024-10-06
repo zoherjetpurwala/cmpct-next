@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
+import { UserProvider } from "@/context/UserContext";
 
 const AppLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,20 +31,20 @@ const AppLayout = ({ children }) => {
   }, [pathname, router]);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar
-        isSidebarOpen={isSidebarOpen}
-        toggleSidebar={toggleSidebar}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <div className="min-h-screen bg-gray-100 flex">
+        <Sidebar
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-      <div className="w-full flex flex-col min-h-screen md:ml-64">
-        <Header toggleSidebar={toggleSidebar} activeTab={activeTab} />
+        <div className="w-full flex flex-col min-h-screen md:ml-64">
+          <Header toggleSidebar={toggleSidebar} activeTab={activeTab} />
 
-        <main className="flex-1 p-4 overflow-auto">{children}</main>
+          <main className="flex-1 p-4 overflow-auto">{children}</main>
+        </div>
       </div>
-    </div>
   );
 };
 

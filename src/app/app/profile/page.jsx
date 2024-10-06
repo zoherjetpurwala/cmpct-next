@@ -1,10 +1,11 @@
 "use client"
 import ProfileComponent from "@/components/ProfileComponent";
+import ShortenUrl from "@/components/ShortenComponent";
 
 const ProfilePage = () => {
   return (
     <div>
-      <ProfileComponent />
+      <ShortenUrl/>
     </div>
   );
 };

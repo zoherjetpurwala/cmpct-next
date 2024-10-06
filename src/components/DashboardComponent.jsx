@@ -33,6 +33,25 @@ const baumans = Baumans({
 });
 
 const DashboardComponent = () => {
+  const [longUrl, setLongUrl] = useState('');
+  const [header, setHeader] = useState('');
+  const [shortUrl, setShortUrl] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const response = await fetch('/api/v1/compact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ longUrl, header }),
+    });
+
+    const data = await response.json();
+    if (data.shortUrl) {
+      setShortUrl(data.shortUrl);
+    }
+  };
+  
   const [shortenedLinks, setShortenedLinks] = useState([
     {
       original: "https://example.com/very/long/url",
