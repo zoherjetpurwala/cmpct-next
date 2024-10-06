@@ -1,9 +1,32 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/UserContext";
-import { Menu, User } from "lucide-react";
+import { LogOut, Mail, Menu, User, Users } from "lucide-react";
 import { Baumans } from "next/font/google";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const baumans = Baumans({
   weight: "400",
@@ -11,9 +34,12 @@ const baumans = Baumans({
 });
 
 const Header = ({ toggleSidebar, activeTab }) => {
-  const { user, loading } = useUser();
-  const { logoutFunction } = useUser();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const router = useRouter();
+  const { user, setUserWithToken } = useUser();
+  const [isLoading, setIsLoading] = useState(false); // Manage loading state
+  const { logoutFunction } = useUser();
 
   const getTitle = () => {
     switch (activeTab) {
@@ -29,9 +55,17 @@ const Header = ({ toggleSidebar, activeTab }) => {
         return "Dashboard";
     }
   };
-
-  const handleLogout = async () => {
-    logoutFunction();
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await logoutFunction();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+      router.push("/");
+    }
   };
 
   if (!user) {
@@ -51,17 +85,61 @@ const Header = ({ toggleSidebar, activeTab }) => {
 
       <h2 className={`text-xl  text-blue-800 max-md:hidden`}>{getTitle()}</h2>
 
-      <Button
-        variant="ghost"
-        onClick={() => {
-          handleLogout();
-        }}
-      >
-        <User className="h-6 w-6" />
-      </Button>
-
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost">
+            <User className="h-6 w-6" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <span>{user.email}</span>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setIsLoginModalOpen(true)}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AuthModal
+        isOpen={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+        onSubmit={handleLogout}
+        buttonText="Logout"
+        isLoading={isLoading}
+      />
     </header>
   );
 };
 
 export default Header;
+
+function AuthModal({ isOpen, onOpenChange, onSubmit, buttonText, isLoading }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Do you want to logout?</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <DialogFooter className="mt-2">
+            <Button type="submit" className="bg-red-600 ">
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
+                  Wait...
+                </span>
+              ) : (
+                buttonText
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

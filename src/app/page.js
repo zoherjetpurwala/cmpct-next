@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import { Baumans } from "next/font/google";
-import { Link, ArrowRight, Check, Star } from "lucide-react";
+import { Link, ArrowRight, Check, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { GridPattern } from "@/components/ui/animated-grid";
 import { cn } from "@/lib/utils";
 import { WobbleCard } from "@/components/ui/wobble-card";
+import { toast } from "sonner";
 
 const baumans = Baumans({ weight: "400", subsets: ["latin"] });
 
@@ -26,9 +27,11 @@ export default function LandingPage() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const router = useRouter();
   const { user, setUserWithToken } = useUser();
+  const [isLoading, setIsLoading] = useState(false); // Manage loading state
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
 
@@ -39,18 +42,20 @@ export default function LandingPage() {
     });
 
     if (response.ok) {
+      setIsLoading(false);
       const { jwtToken } = await response.json();
       setUserWithToken(jwtToken);
       setIsLoginModalOpen(false);
+      toast.success("Login successful.");
       router.push("/app");
     } else {
       const errorData = await response.json();
       console.error("Login failed:", errorData);
-      // TODO: Show error message to user
     }
   };
 
   const handleSignUp = async (e) => {
+    setIsLoading(true);
     e.preventDefault();
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
@@ -62,8 +67,9 @@ export default function LandingPage() {
     });
 
     if (response.ok) {
+      setIsLoading(false);
+      toast.success("Signup successful.");
       setIsSignUpModalOpen(false);
-      // TODO: Show success message and prompt to login
     } else {
       const errorData = await response.json();
       console.error("Sign-up failed:", errorData);
@@ -147,13 +153,13 @@ export default function LandingPage() {
               </Button>
 
               <div className="relative mt-20 h-[300px] md:h-[400px] overflow-hidden max-md:hidden">
-              <img
-                src="/dashboard.png"
-                alt="Dashboard preview"
-                className="absolute top-0 left-0 border-[20px] border-blue-900/65 rounded-3xl object-cover hidden md:block"
-                style={{ height: "auto", width: "200%" }}
-              />
-            </div>
+                <img
+                  src="/dashboard.png"
+                  alt="Dashboard preview"
+                  className="absolute top-0 left-0 border-[20px] border-blue-900/65 rounded-3xl object-cover hidden md:block"
+                  style={{ height: "auto", width: "200%" }}
+                />
+              </div>
 
               <img
                 src="/dashboard.png"
@@ -164,12 +170,10 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Image Box Section */}
-            
           </div>
         </section>
       </div>
       <div>
-
         {/* Features Section */}
         <section className="bg-white py-10">
           <div className="container mx-auto  px-4">
@@ -362,6 +366,7 @@ export default function LandingPage() {
         title="Login to cmpct."
         description="Enter your credentials to access your account"
         buttonText="Login"
+        isLoading={isLoading}
       />
       {/* Sign Up Modal */}
       <AuthModal
@@ -371,6 +376,7 @@ export default function LandingPage() {
         title="Sign Up for cmpct."
         description="Enter your details to create a new account"
         buttonText="Sign Up"
+        isLoading={isLoading}
       />
     </div>
   );
@@ -442,6 +448,7 @@ function AuthModal({
   title,
   description,
   buttonText,
+  isLoading
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -462,7 +469,13 @@ function AuthModal({
             <Input id="password" name="password" type="password" required />
           </div>
           <Button type="submit" className="w-full">
-            {buttonText}
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please Wait...
+              </span>
+            ) : (
+              buttonText
+            )}
           </Button>
         </form>
       </DialogContent>
