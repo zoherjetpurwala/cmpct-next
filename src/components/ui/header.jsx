@@ -1,16 +1,15 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/UserContext";
-import { LogOut, Mail, Menu, User, Users } from "lucide-react";
+import { LogOut, Mail, Menu, User, Users, Loader2 } from "lucide-react";
 import { Baumans } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -19,12 +18,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -35,11 +29,16 @@ const baumans = Baumans({
 
 const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const router = useRouter();
   const { user, setUserWithToken } = useUser();
-  const [isLoading, setIsLoading] = useState(false); // Manage loading state
+  const [isLoading, setIsLoading] = useState(false);
   const { logoutFunction } = useUser();
+
+
+
+  if (!user) {
+    router.push("/");
+  }
 
   const getTitle = () => {
     switch (activeTab) {
@@ -55,22 +54,10 @@ const Header = ({ toggleSidebar, activeTab }) => {
         return "Dashboard";
     }
   };
-  const handleLogout = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      await logoutFunction();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-      router.push("/");
-    }
-  };
 
-  if (!user) {
-    router.push("/");
-  }
+  const handleLogout = async () => {
+    logoutFunction();
+  };
 
   return (
     <header className="bg-blue-800/5 backdrop-blur-3xl border border-blue-800/25 p-4 flex justify-between items-center mx-4 mt-3 rounded-2xl">
@@ -95,7 +82,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuLabel>
-              <span>{user.email}</span>
+              <span>{user?.email}</span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -125,20 +112,13 @@ function AuthModal({ isOpen, onOpenChange, onSubmit, buttonText, isLoading }) {
         <DialogHeader>
           <DialogTitle className="text-2xl">Do you want to logout?</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <DialogFooter className="mt-2">
+        <DialogFooter className="mt-2">
+          <form onSubmit={onSubmit} className="space-y-4">
             <Button type="submit" className="bg-red-600 ">
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
-                  Wait...
-                </span>
-              ) : (
-                buttonText
-              )}
+              Logout
             </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
