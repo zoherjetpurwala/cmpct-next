@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import urlModel from "@/models/url.model";
+
+// Ensure you have DB connection utility ready (dbConnect.js should handle the connection to MongoDB)
+
+export async function POST(request) {
+  await connectToDatabase();
+  try {
+    const { userId } = await request.json();
+    console.log(userId);
+    
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+    const userLinks = await urlModel.find({ user: userId });
+    
+
+    if (!userLinks.length) {
+      return NextResponse.json(
+        { message: "No URLs found for this user" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(userLinks, { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "An error occurred while fetching user URLs" },
+      { status: 500 }
+    );
+  }
+}

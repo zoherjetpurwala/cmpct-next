@@ -31,7 +31,6 @@ const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const router = useRouter();
   const { user, logoutFunction } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -95,8 +94,6 @@ const Header = ({ toggleSidebar, activeTab }) => {
         isOpen={isLoginModalOpen}
         onOpenChange={setIsLoginModalOpen}
         onSubmit={handleLogout}
-        buttonText="Logout"
-        isLoading={isLoading}
       />
     </header>
   );
@@ -104,7 +101,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
 
 export default Header;
 
-function AuthModal({ isOpen, onOpenChange, onSubmit, buttonText, isLoading }) {
+function AuthModal({ isOpen, onOpenChange, onSubmit }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-white sm:max-w-[425px]">

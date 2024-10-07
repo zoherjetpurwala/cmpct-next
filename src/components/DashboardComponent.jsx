@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 
 import { Baumans } from "next/font/google";
+import { useUser } from "@/context/UserContext";
+import { useRouter } from "next/navigation";
 
 const baumans = Baumans({
   weight: "400",
@@ -33,16 +35,61 @@ const baumans = Baumans({
 });
 
 const DashboardComponent = () => {
-  const [longUrl, setLongUrl] = useState('');
-  const [header, setHeader] = useState('');
-  const [shortUrl, setShortUrl] = useState('');
+  const [longUrl, setLongUrl] = useState("");
+  const [header, setHeader] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
+  const { user } = useUser();
+  const router = useRouter();
+
+  const [shortenedLinks, setShortenedLinks] = useState([]);
+
+  async function fetchUserLinks() {
+    if (!user || !user._id) {
+      console.log("User is not logged in or ID is not available.");
+    }    
+    try {
+      const response = await fetch("/api/v1/user-links", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user._id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+     // Transform the received data to match the desired structure
+     const formattedLinks = data.map(link => ({
+      original: link.longUrl, // Map longUrl to original
+      shortened: `http://localhost:3000/${link.shortCode}`, // Construct shortened URL
+      clicks: link.clicks || 0, // Assuming clicks is part of your data
+    }));
+
+    // Update the state with the formatted links
+    setShortenedLinks(formattedLinks);
+      console.log(data);
+    } catch (error) {
+      console.error("Error fetching user links:", error);
+    }
+  }
+
+  useEffect(() => {
+      fetchUserLinks();
+  
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch('/api/v1/compact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/api/v1/compact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.accessToken}`,
+      },
       body: JSON.stringify({ longUrl, header }),
     });
 
@@ -51,24 +98,7 @@ const DashboardComponent = () => {
       setShortUrl(data.shortUrl);
     }
   };
-  
-  const [shortenedLinks, setShortenedLinks] = useState([
-    {
-      original: "https://example.com/very/long/url",
-      shortened: "https://cmpct.io/abc123",
-      clicks: 145,
-    },
-    {
-      original: "https://another-example.com/with/many/parameters",
-      shortened: "https://cmpct.io/def456",
-      clicks: 89,
-    },
-    {
-      original: "https://third-example.com/page",
-      shortened: "https://cmpct.io/ghi789",
-      clicks: 212,
-    },
-  ]);
+
   const handleShorten = (e) => {
     e.preventDefault();
     const newShortLink = {
@@ -84,20 +114,32 @@ const DashboardComponent = () => {
     <>
       <Card className="rounded-2xl border border-blue-800/25 mb-4">
         <CardHeader>
-          <CardTitle>Shorten a URL</CardTitle>
+          <CardTitle>Shorten a URL </CardTitle>
           <CardDescription>
             Enter a long URL to create a compact version
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleShorten} className="flex space-x-2">
+          <form onSubmit={handleSubmit} className="flex space-x-2">
             <Input
               name="url"
               placeholder="Enter your long URL"
-              className="flex-grow"
+              className="flex-grow w-4/6"
+              value={longUrl}
+              onChange={(e) => setLongUrl(e.target.value)}
               required
             />
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Input
+              name="header"
+              placeholder="Enter your header"
+              className="flex-grow w-1/6"
+              value={header}
+              onChange={(e) => setHeader(e.target.value)}
+            />
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 w-1/6"
+            >
               <span className="max-md:hidden">Compact</span>
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

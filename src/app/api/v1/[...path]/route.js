@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import userModel from "@/models/user.model";
 
-export async function GET(_, { params }) {
+export async function GET(request, { params }) { // Add the request parameter here
   const { path } = params;
   const accessToken = request.headers.get('Authorization')?.split(' ')[1]; // Extract access token from Authorization header
 
@@ -19,7 +19,7 @@ export async function GET(_, { params }) {
     if (!user) {
       return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
     }
-
+    
     let urlData;
 
     if (path.length === 2) {
@@ -40,7 +40,7 @@ export async function GET(_, { params }) {
     }
 
     // Redirect to the original long URL
-    return NextResponse.redirect(urlData.longUrl);
+    return NextResponse.json({ longUrl: urlData.longUrl });
   } catch (error) {
     console.error("Error in URL shortener API:", error);
     return NextResponse.json(
