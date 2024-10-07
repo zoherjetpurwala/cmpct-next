@@ -34,11 +34,11 @@ const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { logoutFunction } = useUser();
 
-
-
-  if (!user) {
-    router.push("/");
-  }
+  useEffect(() => {
+    if (!user) {
+      router.push("/"); // Ensure this only runs on the client
+    }
+  }, [user, router]);
 
   const getTitle = () => {
     switch (activeTab) {

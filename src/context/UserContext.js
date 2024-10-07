@@ -1,71 +1,56 @@
 "use client";
+
 import { createContext, useContext, useState, useEffect } from "react";
-import jwt from "jsonwebtoken";
-import jsCookie from "js-cookie"; // Using js-cookie for easy cookie management
 
 const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
 
-  const fetchUser = async (userId) => {
+  const checkUserSession = async () => {
     try {
-      const response = await fetch(`/api/user?userId=${userId}`);
+      setLoading(true);
+      const response = await fetch('/api/user', {
+        method: 'GET',
+        credentials: 'include', // This is important for sending cookies
+      });
       if (!response.ok) {
-        throw new Error("Failed to fetch user info");
+        throw new Error('Invalid session');
       }
       const userData = await response.json();
-      setUser(userData); // Set user data from the API
+      setUser(userData);
     } catch (error) {
-      console.error("Error fetching user info:", error);
+      console.error("Error checking user session:", error);
+      setUser(null);
     } finally {
-      setLoading(false); // Set loading to false after fetching
+      setLoading(false);
     }
   };
 
-  const setUserWithToken = (token) => {
-    if (token) {
-      try {
-        const decoded = jwt.decode(token);
-        setUser(null); // Clear current user data to avoid stale data
-        fetchUser(decoded.id); // Fetch user info from the API
-      } catch (error) {
-        console.error("Invalid token:", error);
+  const logoutFunction = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Logout failed');
       }
-    } else {
-      setUser(null); // Clear user state if token is not present
-    }
-  };
-
-  const logoutFunction = () => {
-    console.log("Logging out..."); // Log the logout process
-
-    jsCookie.remove("jwt"); // Remove JWT cookie
-    setUser(null); // Clear user state
-    setLoading(false); // Ensure loading state is set to false
-    console.log(user);
-    
-  };
-
-
-  // Function to load JWT token from cookie on page load
-  const loadUserFromCookie = () => {
-    const token = jsCookie.get("jwt"); // Retrieve the token from cookie
-    if (token) {
-      setUserWithToken(token); // If token exists, set user with it
-    } else {
-      setLoading(false); // No token found, stop loading
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      setUser(null);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUserFromCookie(); // Load user from cookie when the app initializes
+    checkUserSession();
   }, []);
 
-
   return (
-    <UserContext.Provider value={{ user, setUserWithToken, loading, logoutFunction  }}>
+    <UserContext.Provider value={{ user, checkUserSession, loading, logoutFunction }}>
       {children}
     </UserContext.Provider>
   );
@@ -73,5 +58,9 @@ export const UserProvider = ({ children }) => {
 
 // Custom hook to use the UserContext
 export const useUser = () => {
-  return useContext(UserContext);
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
 };

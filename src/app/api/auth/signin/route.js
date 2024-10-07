@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 // Database connection helper
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
-  await mongoose.connect(process.env.MONGODB_URI, {
+  return mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
@@ -16,14 +16,13 @@ const connectDB = async () => {
 
 // Zod schema for validation
 const signinSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address").toLowerCase().trim(),
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
 export async function POST(req) {
   try {
     await connectDB();
-
     const body = await req.json();
 
     // Validate input with Zod
@@ -61,14 +60,37 @@ export async function POST(req) {
     }
 
     // Generate a JWT token with the user ID and optional additional claims
-    const jwtToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        // Add any additional non-sensitive claims here
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     // Return the JWT token in the response
     return NextResponse.json(
-      { message: "Sign in successful", jwtToken },
-      { status: 200 }
+      {
+        message: "Sign in successful",
+        jwtToken,
+        user: {
+          id: user._id,
+          email: user.email,
+          // Add any other non-sensitive user data here
+        },
+      },
+      {
+        status: 200,
+        headers: {
+          "Set-Cookie": `token=${jwtToken}; HttpOnly; Path=/; Max-Age=3600; SameSite=Strict; ${
+            process.env.NODE_ENV === "production" ? "Secure" : ""
+          }`,
+        },
+      }
     );
   } catch (error) {
     console.error("Sign in error:", error);

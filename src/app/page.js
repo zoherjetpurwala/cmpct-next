@@ -26,7 +26,7 @@ export default function LandingPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const router = useRouter();
-  const { user, setUserWithToken } = useUser();
+  const { user, checkUserSession } = useUser();
   const [isLoading, setIsLoading] = useState(false); // Manage loading state
 
   const handleLogin = async (e) => {
@@ -34,46 +34,62 @@ export default function LandingPage() {
     setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
-
-    const response = await fetch("/api/auth/signin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (response.ok) {
+  
+    try {
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include', // This is important for including cookies in the request
+      });
+  
+      if (response.ok) {
+        await checkUserSession(); // This will fetch the user data using the newly set cookie
+        setIsLoginModalOpen(false);
+        toast.success("Login successful.");
+        router.push("/app");
+      } else {
+        const errorData = await response.json();
+        console.error("Login failed:", errorData);
+        toast.error("Login failed. Please check your credentials.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
-      const { jwtToken } = await response.json();
-      setUserWithToken(jwtToken);
-      setIsLoginModalOpen(false);
-      toast.success("Login successful.");
-      router.push("/app");
-    } else {
-      const errorData = await response.json();
-      console.error("Login failed:", errorData);
     }
   };
 
   const handleSignUp = async (e) => {
-    setIsLoading(true);
     e.preventDefault();
+    setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
-
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (response.ok) {
+  
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+  
+      if (response.ok) {
+        await checkUserSession(); // If signup also logs the user in
+        setIsSignUpModalOpen(false);
+        toast.success("Signup successful.");
+        router.push("/app");
+      } else {
+        const errorData = await response.json();
+        console.error("Sign-up failed:", errorData);
+        toast.error("Sign-up failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Sign-up error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
-      toast.success("Signup successful.");
-      setIsSignUpModalOpen(false);
-    } else {
-      const errorData = await response.json();
-      console.error("Sign-up failed:", errorData);
-      // TODO: Show error message to user
     }
   };
 
