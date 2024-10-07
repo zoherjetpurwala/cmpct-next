@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const UrlSchema = new mongoose.Schema({
   longUrl: {
@@ -10,6 +10,11 @@ const UrlSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true, // URL is now linked to a user
+  },
   header: {
     type: String,
     default: null
@@ -20,4 +25,4 @@ const UrlSchema = new mongoose.Schema({
   }
 });
 
-export default mongoose.models.Url || mongoose.model('Url', UrlSchema)
+export default mongoose.models.Url || mongoose.model("Url", UrlSchema);

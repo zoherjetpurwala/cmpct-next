@@ -4,15 +4,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import userModel from "@/models/user.model"; // Adjust the path as needed
 import jwt from "jsonwebtoken";
-
-// Database connection helper
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  return mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-};
+import { connectToDatabase } from "@/lib/db";
 
 // Zod schema for validation
 const signinSchema = z.object({
@@ -22,7 +14,7 @@ const signinSchema = z.object({
 
 export async function POST(req) {
   try {
-    await connectDB();
+    await connectToDatabase();
     const body = await req.json();
 
     // Validate input with Zod

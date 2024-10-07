@@ -1,14 +1,14 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const PurchaseSchema = new mongoose.Schema({
+const purchaseSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
   tier: {
     type: String,
-    enum: ['basic', 'pro', 'enterprise'],
+    enum: ["free", "basic", "pro", "enterprise"], // Ensure "free" is included
     required: true,
   },
   purchaseDate: {
@@ -16,8 +16,11 @@ const PurchaseSchema = new mongoose.Schema({
     default: Date.now,
   },
   expirationDate: {
-    type: Date, // If applicable for subscription
+    type: Date,
+    required: function () {
+      return this.tier !== "free"; // Make it required only if tier is not free
+    },
   },
 });
 
-export default mongoose.models.Purchase || mongoose.model('Purchase', PurchaseSchema);
+export default mongoose.models.Purchase || mongoose.model("Purchase", purchaseSchema);

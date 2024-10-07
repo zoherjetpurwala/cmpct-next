@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
       <body className={`${opensans.className} antialiased`}>
         <UserProvider>
           {children}
-          <Toaster richColors closeButton />
+          <Toaster richColors closeButton  position="top-center" />
         </UserProvider>
       </body>
     </html>

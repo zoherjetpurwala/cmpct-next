@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useUser } from "@/context/UserContext";
+import { useState } from "react";
 
 export default function ShortenUrl() {
-  const [longUrl, setLongUrl] = useState('');
-  const [header, setHeader] = useState('');
-  const [shortUrl, setShortUrl] = useState('');
+  const [longUrl, setLongUrl] = useState("");
+  const [header, setHeader] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
+
+  const { user } = useUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch('/api/v1/compact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/api/v1/compact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.accessToken}`,
+      },
       body: JSON.stringify({ longUrl, header }),
     });
 

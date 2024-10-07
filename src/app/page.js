@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
@@ -34,15 +34,15 @@ export default function LandingPage() {
     setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
-  
+
     try {
       const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: 'include', // This is important for including cookies in the request
+        credentials: "include", // This is important for including cookies in the request
       });
-  
+
       if (response.ok) {
         await checkUserSession(); // This will fetch the user data using the newly set cookie
         setIsLoginModalOpen(false);
@@ -66,20 +66,22 @@ export default function LandingPage() {
     setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
-  
+    const name = e.currentTarget.name.value;
+    const phone = e.currentTarget.phone.value;
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
+        body: JSON.stringify({ email, password, name, phone }),
+        credentials: "include",
       });
-  
+
       if (response.ok) {
         await checkUserSession(); // If signup also logs the user in
         setIsSignUpModalOpen(false);
         toast.success("Signup successful.");
-        router.push("/app");
+        setIsLoginModalOpen(true);
+        //router.push("/app");
       } else {
         const errorData = await response.json();
         console.error("Sign-up failed:", errorData);
@@ -92,9 +94,13 @@ export default function LandingPage() {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    if (user) {
+      router.push("/app");
+    }
+  }, [router, user]);
 
   if (user) {
-    router.push("/app");
     return null;
   }
 
@@ -219,15 +225,25 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section className="py-20">
           <div className="container mx-auto px-4">
-            <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            <h3 className="py-10 font-bold  mb-6  relative z-10 text-4xl md:text-4xl  bg-clip-text text-transparent bg-gradient-to-b to-[90%] from-blue-500 to-blue-900  text-center font-sans">
               Simple, Transparent Pricing
             </h3>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-4 gap-8">
               <PricingCard
-                title="Basic"
-                price="$0"
+                title="Free"
+                price="Free"
                 features={[
                   "Up to 1,000 short links",
+                  "Basic analytics",
+                  "Standard support",
+                ]}
+              />
+              <PricingCard
+                title="Basic"
+                price="₹69"
+                features={[
+                  "Up to 500 short links",
+                  "Unlimited API Calls",
                   "Basic analytics",
                   "Standard support",
                 ]}
@@ -260,7 +276,7 @@ export default function LandingPage() {
         {/* Testimonials Section */}
         <section className="bg-gray-50 py-20">
           <div className="container mx-auto px-4">
-            <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            <h3 className="py-10 font-bold  mb-6  relative z-10 text-4xl md:text-4xl  bg-clip-text text-transparent bg-gradient-to-b to-[90%] from-blue-500 to-blue-900  text-center font-sans">
               What Our Customers Say
             </h3>
             <div className="grid md:grid-cols-2 gap-8">
@@ -278,7 +294,7 @@ export default function LandingPage() {
           </div>
         </section>
       </div>
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-blue-950 rounded-t-3xl text-white py-12">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
@@ -369,13 +385,14 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
+          <div className="mt-8 pt-8 border-t border-gray-500/50 text-center text-gray-400">
             <p>&copy; {new Date().getFullYear()} cmpct. All rights reserved.</p>
           </div>
         </div>
       </footer>
       {/* Login Modal */}
       <AuthModal
+        type="Login"
         isOpen={isLoginModalOpen}
         onOpenChange={setIsLoginModalOpen}
         onSubmit={handleLogin}
@@ -386,6 +403,7 @@ export default function LandingPage() {
       />
       {/* Sign Up Modal */}
       <AuthModal
+        type="SignUp"
         isOpen={isSignUpModalOpen}
         onOpenChange={setIsSignUpModalOpen}
         onSubmit={handleSignUp}
@@ -412,9 +430,6 @@ function FeatureCard({ icon, title, description }) {
         {description}
       </p>
     </WobbleCard>
-    // <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
-
-    // </div>
   );
 }
 
@@ -458,13 +473,14 @@ function TestimonialCard({ quote, author, company }) {
 }
 
 function AuthModal({
+  type,
   isOpen,
   onOpenChange,
   onSubmit,
   title,
   description,
   buttonText,
-  isLoading
+  isLoading,
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -476,6 +492,25 @@ function AuthModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
+          {type === "SignUp" && (
+            <>
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" name="name" type="text" required />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  pattern="[0-9]{10}"
+                  placeholder="Enter 10-digit phone number"
+                  required
+                />
+              </div>
+            </>
+          )}
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required />

@@ -30,13 +30,12 @@ const baumans = Baumans({
 const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const router = useRouter();
-  const { user, setUserWithToken } = useUser();
+  const { user, logoutFunction } = useUser();
   const [isLoading, setIsLoading] = useState(false);
-  const { logoutFunction } = useUser();
 
   useEffect(() => {
     if (!user) {
-      router.push("/"); // Ensure this only runs on the client
+      router.push("/");
     }
   }, [user, router]);
 
