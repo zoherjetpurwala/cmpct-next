@@ -61,8 +61,8 @@ export async function POST(request) {
     await user.save();
 
     const shortUrl = header
-      ? `${process.env.DOMAIN}/${header}/${shortCode}`
-      : `${process.env.DOMAIN}/${shortCode}`;
+      ? `${process.env.NEXT_PUBLIC_DOMAIN}/${header}/${shortCode}`
+      : `${process.env.NEXT_PUBLIC_DOMAIN}/${shortCode}`;
 
     return NextResponse.json({ shortUrl });
   } catch (error) {

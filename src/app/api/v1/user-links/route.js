@@ -8,8 +8,7 @@ export async function POST(request) {
   await connectToDatabase();
   try {
     const { userId } = await request.json();
-    console.log(userId);
-    
+   
 
     if (!userId) {
       return NextResponse.json(

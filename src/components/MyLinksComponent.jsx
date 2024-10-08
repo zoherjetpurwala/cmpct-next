@@ -24,29 +24,17 @@ import {
 } from "lucide-react";
 
 import { Baumans } from "next/font/google";
+import { useLinkManagement } from "@/hooks/useLinkManagement";
 
 const baumans = Baumans({
   weight: "400",
   subsets: ["latin"],
 });
 const MyLinksComponent = () => {
-    const [shortenedLinks, setShortenedLinks] = useState([
-        {
-          original: "https://example.com/very/long/url",
-          shortened: "https://cmpct.io/abc123",
-          clicks: 145,
-        },
-        {
-          original: "https://another-example.com/with/many/parameters",
-          shortened: "https://cmpct.io/def456",
-          clicks: 89,
-        },
-        {
-          original: "https://third-example.com/page",
-          shortened: "https://cmpct.io/ghi789",
-          clicks: 212,
-        },
-      ]);
+  const { shortenedLinks, isLoading, error } = useLinkManagement();
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
   return (
     <Card className="rounded-2xl border border-blue-800/25">
       <CardHeader>

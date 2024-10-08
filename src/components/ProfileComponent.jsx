@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,9 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-
+import { useUser } from "@/context/UserContext";
 
 const ProfileComponent = () => {
+  const user = useUser();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      setLoading(false); // Stop loading once user details are available
+    }
+  }, [user]);
+
+  if (loading) {
+    return <div>Loading...</div>; // You can replace this with a spinner or a loading indicator
+  }
+
   return (
     <div>
       <Card className="rounded-2xl border border-blue-800/25">
@@ -24,14 +36,14 @@ const ProfileComponent = () => {
           <form className="space-y-4">
             <div>
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" defaultValue="John Doe" />
+              <Input id="fullName" defaultValue={user.name || "John Doe"} />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                defaultValue="john.doe@example.com"
+                defaultValue={user.email || "john.doe@example.com"}
               />
             </div>
             <div>
