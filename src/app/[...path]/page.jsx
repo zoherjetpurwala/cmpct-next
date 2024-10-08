@@ -6,9 +6,8 @@ import { useUser } from "@/context/UserContext";
 
 async function fetchRedirectUrl(path, accessToken) {
     const response = await fetch(`/api/v1/${path.join("/")}`, {
-        method: "GET",
         headers: {
-            Authorization: `Bearer ${accessToken}`, // Pass the access token in the headers
+            Authorization: `Bearer ${accessToken}`,
         },
     });
     if (!response.ok) throw new Error("Failed to fetch redirect URL");
@@ -18,31 +17,27 @@ async function fetchRedirectUrl(path, accessToken) {
 export default function ShortUrlPage({ params }) {
     const { path } = params;
     const router = useRouter();
-    const { user } = useUser(); // Make sure user is extracted correctly
+    const { user } = useUser();
 
     useEffect(() => {
-        async function redirect() {
-            try {
-                if (!user || !user.accessToken) {
-                    throw new Error("User is not authenticated");
-                }
+        if (!user?.accessToken) {
+            router.push('/login'); // Redirect to login if not authenticated
+            return;
+        }
 
-                const data = await fetchRedirectUrl(path, user.accessToken);
-                console.log("API response data:", data); // Log the data for debugging
-
+        fetchRedirectUrl(path, user.accessToken)
+            .then(data => {
                 if (data.longUrl) {
-                    router.push(data.longUrl); // Use Next.js router for redirection
+                    window.location.href = data.longUrl; // Use window.location for faster redirect
                 } else {
                     throw new Error("No redirect URL found");
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error("Error fetching redirect URL:", error);
-                // Handle error (e.g., show error message)
-            }
-        }
+                router.push('/error'); // Redirect to error page
+            });
+    }, [path, user, router]);
 
-        redirect();
-    }, [path, user]);
-
-    return <div>{!user || !user.accessToken ? "Not authenticated" : "Redirecting..."}</div>;
+    return <div>Redirecting...</div>;
 }

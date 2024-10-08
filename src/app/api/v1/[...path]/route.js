@@ -3,35 +3,41 @@ import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import userModel from "@/models/user.model";
 
-export async function GET(request, { params }) { // Add the request parameter here
+let dbConnection = null;
+
+export async function GET(request, { params }) {
   const { path } = params;
-  const accessToken = request.headers.get('Authorization')?.split(' ')[1]; // Extract access token from Authorization header
+  const accessToken = request.headers.get("Authorization")?.split(" ")[1];
 
   if (!accessToken) {
-    return NextResponse.json({ error: 'Access token is required' }, { status: 401 });
+    return NextResponse.json(
+      { error: "Access token is required" },
+      { status: 401 }
+    );
   }
 
   try {
-    await connectToDatabase();
-
-    // Validate the user by access token
-    const user = await userModel.findOne({ accessToken });
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
+    if (!dbConnection) {
+      dbConnection = await connectToDatabase();
     }
-    
-    let urlData;
 
-    if (path.length === 2) {
-      const [header, shortCode] = path;
-      urlData = await urlModel.findOne({ shortCode, header, user: user._id }); // Ensure URL belongs to the user
-    } else if (path.length === 1) {
-      const [shortCode] = path;
-      urlData = await urlModel.findOne({ shortCode, user: user._id }); // Ensure URL belongs to the user
-    } else {
+    const [user, urlData] = await Promise.all([
+      userModel.findOne({ accessToken }).select("_id").lean(),
+      urlModel
+        .findOne({
+          $or: [
+            { shortCode: path[0], user: { $exists: true } },
+            { shortCode: path[1], header: path[0], user: { $exists: true } },
+          ],
+        })
+        .select("longUrl")
+        .lean(),
+    ]);
+
+    if (!user) {
       return NextResponse.json(
-        { error: "Invalid URL format" },
-        { status: 400 }
+        { error: "Invalid access token" },
+        { status: 403 }
       );
     }
 
@@ -39,7 +45,6 @@ export async function GET(request, { params }) { // Add the request parameter he
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
-    // Redirect to the original long URL
     return NextResponse.json({ longUrl: urlData.longUrl });
   } catch (error) {
     console.error("Error in URL shortener API:", error);
