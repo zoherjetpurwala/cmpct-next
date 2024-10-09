@@ -2,6 +2,7 @@
 import ProfileComponent from "@/components/ProfileComponent";
 
 const ProfilePage = () => {
+  
   return (
     <div>
       <ProfileComponent />

@@ -24,13 +24,16 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useLinkManagement } from "@/hooks/useLinkManagement";
-import { useUser } from "@/context/UserContext";
+// import { useUserStore } from "@/context/UserContext";
+import { useSession } from "next-auth/react";
 
 const DashboardComponent = () => {
   const [formData, setFormData] = useState({ longUrl: "", header: "" });
   const { shortenedLinks, isLoading, error, fetchUserLinks, addNewLink } =
     useLinkManagement();
-  const { user } = useUser();
+  // const { user } = useUserStore();
+  const { data: session } = useSession(); // Use NextAuth session
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,7 +47,7 @@ const DashboardComponent = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user.accessToken}`,
+          Authorization: `Bearer ${session?.user.accessToken}`,
         },
         body: JSON.stringify(formData),
       });
@@ -109,7 +112,10 @@ const DashboardComponent = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="">
-          <form onSubmit={handleSubmit} className="flex max-md:flex-col max-md:w-full gap-2">
+          <form
+            onSubmit={handleSubmit}
+            className="flex max-md:flex-col max-md:w-full gap-2"
+          >
             <Input
               name="longUrl"
               placeholder="Enter your long URL"

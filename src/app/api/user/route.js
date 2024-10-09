@@ -39,7 +39,6 @@ export async function GET(req) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    // Return the user data (excluding sensitive fields)
     return NextResponse.json(user, { status: 200 });
   } catch (error) {
     console.error('Error fetching user info:', error);

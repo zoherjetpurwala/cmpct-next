@@ -1,7 +1,7 @@
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
-import { UserProvider } from "@/context/UserContext";
 import { Toaster } from "@/components/ui/sonner";
+import { SessionProviderWrapper } from "@/lib/SessionProviderWrapper";
 
 const opensans = Open_Sans({
   weight: ["300", "400", "500", "600", "700", "800"],
@@ -17,10 +17,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${opensans.className} antialiased`}>
-        <UserProvider>
+        <SessionProviderWrapper>
           {children}
-          <Toaster richColors closeButton  position="top-center" />
-        </UserProvider>
+          <Toaster richColors closeButton position="top-center" />
+        </SessionProviderWrapper>
       </body>
     </html>
   );

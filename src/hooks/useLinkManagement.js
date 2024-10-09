@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useUser } from "@/context/UserContext";
+import { useSession } from 'next-auth/react';
 
 export const useLinkManagement = () => {
   const [shortenedLinks, setShortenedLinks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useUser();
+  const { data: session } = useSession(); // Use NextAuth session
 
   const fetchUserLinks = useCallback(async () => {
-    if (!user?._id) {
+    if (!session?.user.id) {
       console.log("User is not logged in or ID is not available.");
       setIsLoading(false);
       return;
@@ -18,14 +18,17 @@ export const useLinkManagement = () => {
       const response = await fetch("/api/v1/user-links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user._id }),
+        body: JSON.stringify({ userId: session?.user.id }),
       });
+      const data = await response.json();
+      console.log(data);
+
 
       if (!response.ok) {
         throw new Error("Failed to fetch user links");
       }
 
-      const data = await response.json();
+      // const data = await response.json();
       const formattedLinks = data.map((link) => ({
         original: link.longUrl,
         shortened: `${process.env.NEXT_PUBLIC_DOMAIN}/${link.header ? `${link.header}/` : ""}${link.shortCode}`,
@@ -39,7 +42,7 @@ export const useLinkManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [session?.user]);
 
   useEffect(() => {
     fetchUserLinks();

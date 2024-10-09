@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/context/UserContext";
 import { Baumans } from "next/font/google";
 import { Link, ArrowRight, Check, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { GridPattern } from "@/components/ui/animated-grid";
 import { cn } from "@/lib/utils";
 import { WobbleCard } from "@/components/ui/wobble-card";
 import { toast } from "sonner";
+import { signIn, useSession } from "next-auth/react";
 
 const baumans = Baumans({ weight: "400", subsets: ["latin"] });
 
@@ -29,72 +29,79 @@ export default function LandingPage() {
     isLoading: false,
   });
   const router = useRouter();
-  const { user, checkUserSession } = useUser();
+  const { data: session, status } = useSession(); // Use NextAuth session
 
   useEffect(() => {
-    if (user) router.push("/app");
-  }, [router, user]);
+    if (session) {
+      router.push("/app");
+    }
+  }, [session, router]);
 
-  const handleAuth = useCallback(
-    async (e, type) => {
+  const handleLogin = useCallback(async (e) => {
+    e.preventDefault();
+    setAuthState((prev) => ({ ...prev, isLoading: true }));
+    const formData = Object.fromEntries(new FormData(e.target));
+  
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+  
+      if (result.error) {
+        toast.error(result.error || "Login failed. Please try again.");
+      } else {
+        toast.success("Login successful.");
+        router.push("/app");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
+      console.log(error);
+      
+    } finally {
+      setAuthState((prev) => ({ ...prev, isLoading: false }));
+    }
+  }, [router]);
+
+  const handleSignUp = useCallback(
+    async (e) => {
       e.preventDefault();
       setAuthState((prev) => ({ ...prev, isLoading: true }));
+
       const formData = Object.fromEntries(new FormData(e.target));
 
       try {
-        const response = await fetch(
-          `/api/auth/${type === "login" ? "signin" : "signup"}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-            credentials: "include",
-          }
-        );
+        const response = await fetch(`/api/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
 
         if (response.ok) {
-          await checkUserSession();
+          toast.success("Sign-up successful. Please log in.");
           setAuthState((prev) => ({
             ...prev,
-            [`is${type === "login" ? "Login" : "SignUp"}ModalOpen`]: false,
+            isSignUpModalOpen: false,
+            isLoginModalOpen: true,
           }));
-          toast.success(
-            `${type === "login" ? "Login" : "Sign-up"} successful.`
-          );
-          if (type === "login") router.push("/app");
-          else setAuthState((prev) => ({ ...prev, isLoginModalOpen: true }));
         } else {
           const errorData = await response.json();
-          console.error(
-            `${type === "login" ? "Login" : "Sign-up"} failed:`,
-            errorData
-          );
-          toast.error(
-            `${
-              type === "login" ? "Login" : "Sign-up"
-            } failed. Please try again.`
-          );
+          toast.error(errorData?.message || "Sign-up failed. Please try again.");
         }
       } catch (error) {
-        console.error(
-          `${type === "login" ? "Login" : "Sign-up"} error:`,
-          error
-        );
         toast.error("An unexpected error occurred. Please try again.");
+        console.error("Sign-up error:", error);
       } finally {
         setAuthState((prev) => ({ ...prev, isLoading: false }));
       }
     },
-    [router, checkUserSession]
+    []
   );
 
-  const handleLogin = useCallback((e) => handleAuth(e, "login"), [handleAuth]);
-  const handleSignUp = useCallback(
-    (e) => handleAuth(e, "signup"),
-    [handleAuth]
-  );
-
-  if (user) return null;
+  // Return null if user is already logged in (to avoid rendering unnecessary content)
+  if (status === "loading") return null;
+  if (session) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -218,6 +225,40 @@ const HeroSection = ({ onSignUpClick }) => (
       </motion.div>
     </div>
   </section>
+);
+
+const AuthModal = ({ type, isOpen, onOpenChange, onSubmit, title, description, buttonText, isLoading }) => (
+  <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle className="text-blue-900">{title}</DialogTitle>
+        <DialogDescription className="text-gray-600">{description}</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={onSubmit} className="flex flex-col">
+        {type === "SignUp" && (
+          <>
+            <Label htmlFor={`${type}-name`}>Name</Label>
+            <Input id={`${type}-name`} name="name" type="text" required />
+            <Label htmlFor={`${type}-phone`}>Phone</Label>
+            <Input id={`${type}-phone`} name="phone" type="tel" pattern="^\d{10}$" required />
+          </>
+        )}
+        <Label htmlFor={`${type}-email`}>Email</Label>
+        <Input id={`${type}-email`} name="email" type="email" required />
+        <Label htmlFor={`${type}-password`}>Password</Label>
+        <Input id={`${type}-password`} name="password" type="password" required />
+        <Button type="submit" className="mt-4" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              Loading... <Loader2 className="animate-spin h-5 w-5 ml-2" />
+            </>
+          ) : (
+            buttonText
+          )}
+        </Button>
+      </form>
+    </DialogContent>
+  </Dialog>
 );
 
 const FeaturesSection = () => (
@@ -392,7 +433,8 @@ const PricingCard = ({ title, price, features, highlighted = false }) => (
     </ul>
     <Button
       className={`w-full ${highlighted ? "bg-blue-900" : ""}`}
-      variant={highlighted ? "default" : "outline"} disabled
+      variant={highlighted ? "default" : "outline"}
+      disabled
     >
       Coming Soon
     </Button>
@@ -414,64 +456,3 @@ const TestimonialCard = ({ quote, author, company }) => (
   </div>
 );
 
-function AuthModal({
-  type,
-  isOpen,
-  onOpenChange,
-  onSubmit,
-  title,
-  description,
-  buttonText,
-  isLoading,
-}) {
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl text-center">{title}</DialogTitle>
-          <DialogDescription className="text-center text-gray-500">
-            {description}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          {type === "SignUp" && (
-            <>
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" type="text" required />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  pattern="[0-9]{10}"
-                  placeholder="Enter 10-digit phone number"
-                  required
-                />
-              </div>
-            </>
-          )}
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required />
-          </div>
-          <Button type="submit" className="w-full">
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please Wait...
-              </span>
-            ) : (
-              buttonText
-            )}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}

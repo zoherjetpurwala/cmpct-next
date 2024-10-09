@@ -1,10 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useUser } from "@/context/UserContext";
-import { LogOut, Mail, Menu, User, Users, Loader2 } from "lucide-react";
+import { LogOut, Menu, User } from "lucide-react";
 import { Baumans } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react"; // Import NextAuth hooks
 import {
   Dialog,
   DialogContent,
@@ -29,14 +29,19 @@ const baumans = Baumans({
 
 const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loadingLogout, setLoadingLogout] = useState(false);
   const router = useRouter();
-  const { user, logoutFunction } = useUser();
+  const { data: session, status } = useSession(); // Use NextAuth session
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/");
-    }
-  }, [user, router]);
+  // useEffect(() => {
+  //   if (status === "unauthenticated") {
+  //     router.push("/");
+  //   }
+  // }, [status, router]);
+
+  // if (status === "loading") {
+  //   return <div>Loading...</div>;
+  // }
 
   const getTitle = () => {
     switch (activeTab) {
@@ -54,7 +59,15 @@ const Header = ({ toggleSidebar, activeTab }) => {
   };
 
   const handleLogout = async () => {
-    logoutFunction();
+    setLoadingLogout(true);
+    try {
+      await signOut({ redirect: false });
+      router.push("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      setLoadingLogout(false);
+    }
   };
 
   return (
@@ -80,13 +93,13 @@ const Header = ({ toggleSidebar, activeTab }) => {
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuLabel>
-              <span>{user?.email}</span>
+              <span>{session?.user?.email}</span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setIsLoginModalOpen(true)}>
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
+            <span>{loadingLogout ? "Logging out..." : "Log out"}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -94,6 +107,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
         isOpen={isLoginModalOpen}
         onOpenChange={setIsLoginModalOpen}
         onSubmit={handleLogout}
+        loading={loadingLogout}
       />
     </header>
   );
@@ -101,7 +115,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
 
 export default Header;
 
-function AuthModal({ isOpen, onOpenChange, onSubmit }) {
+function AuthModal({ isOpen, onOpenChange, onSubmit, loading }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-white sm:max-w-[425px]">
@@ -109,9 +123,15 @@ function AuthModal({ isOpen, onOpenChange, onSubmit }) {
           <DialogTitle className="text-2xl">Do you want to logout?</DialogTitle>
         </DialogHeader>
         <DialogFooter className="mt-2">
-          <form onSubmit={onSubmit} className="space-y-4">
-            <Button type="submit" className="bg-red-600 ">
-              Logout
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSubmit();
+            }}
+            className="space-y-4"
+          >
+            <Button type="submit" className={`bg-red-600`} disabled={loading}>
+              {loading ? "Logging out..." : "Logout"}
             </Button>
           </form>
         </DialogFooter>

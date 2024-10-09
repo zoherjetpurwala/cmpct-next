@@ -19,13 +19,6 @@ export async function POST(request) {
     const userLinks = await urlModel.find({ user: userId });
     
 
-    if (!userLinks.length) {
-      return NextResponse.json(
-        { message: "No URLs found for this user" },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json(userLinks, { status: 200 });
   } catch (error) {
     console.error(error);

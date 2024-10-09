@@ -9,20 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useUser } from "@/context/UserContext";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const ProfileComponent = () => {
-  const user = useUser();
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const { data: session, status } = useSession(); // Use NextAuth session
 
   useEffect(() => {
-    if (user) {
-      setLoading(false); // Stop loading once user details are available
+    if (status === "unauthenticated") {
+      router.push("/");
     }
-  }, [user]);
+  }, [status, router]);
 
-  if (loading) {
-    return <div>Loading...</div>; // You can replace this with a spinner or a loading indicator
+  if (status === "loading") {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -30,20 +32,22 @@ const ProfileComponent = () => {
       <Card className="rounded-2xl border border-blue-800/25">
         <CardHeader>
           <CardTitle>Profile</CardTitle>
-          <CardDescription>Manage your account settings</CardDescription>
+          <CardDescription>
+            Manage your account settings {session?.user.email}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4">
             <div>
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" defaultValue={user.name || "John Doe"} />
+              <Input id="fullName" defaultValue={session?.user.name || "John Doe"} />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                defaultValue={user.email || "john.doe@example.com"}
+                defaultValue={session?.user.email || "john.doe@example.com"}
               />
             </div>
             <div>

@@ -4,13 +4,14 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
-import { UserProvider } from "@/context/UserContext";
+
 
 const AppLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const pathname = usePathname();
   const router = useRouter();
+
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
