@@ -32,7 +32,7 @@ export const useLinkManagement = () => {
       const formattedLinks = data.map((link) => ({
         original: link.longUrl,
         shortened: `${process.env.NEXT_PUBLIC_DOMAIN}/${link.header ? `${link.header}/` : ""}${link.shortCode}`,
-        clicks: link.clicks || 0,
+        clicks: link.clickCount || 0,
       }));
 
       setShortenedLinks(formattedLinks);

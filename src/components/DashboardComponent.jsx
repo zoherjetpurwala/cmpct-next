@@ -35,6 +35,7 @@ const DashboardComponent = () => {
   // const { user } = useUserStore();
   const { data: session } = useSession(); // Use NextAuth session
 
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -143,7 +144,7 @@ const DashboardComponent = () => {
         </CardContent>
       </Card>
       {isLoading ? (
-        <p><LoadingSpinner/></p>
+        <LoadingSpinner/>
       ) : error ? (
         <p>Error: {error}</p>
       ) : (

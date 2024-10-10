@@ -9,7 +9,7 @@ export async function POST(request) {
   const accessToken = request.headers.get('Authorization')?.split(' ')[1]; // Extract access token from Authorization header
 
   if (!longUrl) {
-    return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Long URL is required' }, { status: 400 });
   }
 
   if (!accessToken) {
@@ -19,13 +19,12 @@ export async function POST(request) {
   await connectToDatabase();
 
   try {
-    // Fetch the user based on access token
     const user = await userModel.findOne({ accessToken });
     if (!user) {
       return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
     }
 
-    // Check if the user is on the free plan and has exceeded their limit
+    // Check user's free tier limits
     if (user.currentTier === 'free') {
       if (user.linkCount >= 10) {
         return NextResponse.json(
@@ -34,7 +33,6 @@ export async function POST(request) {
         );
       }
 
-      // Check the API call count for the day
       if (user.apiCallsToday >= 10) {
         return NextResponse.json(
           { error: 'API call limit reached for the day. Upgrade your plan for more API calls.' },
@@ -46,24 +44,31 @@ export async function POST(request) {
       user.apiCallsToday += 1;
     }
 
-    const shortCode = nanoid(6); // Generate a unique short code
+    // Generate a unique short code for the URL
+    const shortCode = nanoid(5);
 
+    // Create the new URL document with initial values
     const url = new urlModel({
       longUrl,
       shortCode,
+      clickCount: 0, // Initialize click count
       header: header || null, // Optional header
-      user: user._id // Link the URL to the user
+      user: user._id, // Link the URL to the user
     });
 
+    // Save the new URL document
     await url.save();
 
+    // Increment the user's link count
     user.linkCount += 1;
     await user.save();
 
+    // Construct the short URL based on whether a header is present
     const shortUrl = header
       ? `${process.env.NEXT_PUBLIC_DOMAIN}/${header}/${shortCode}`
       : `${process.env.NEXT_PUBLIC_DOMAIN}/${shortCode}`;
 
+    // Return the short URL
     return NextResponse.json({ shortUrl });
   } catch (error) {
     console.error('Error creating short URL:', error);
