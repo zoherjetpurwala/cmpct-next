@@ -26,6 +26,7 @@ import {
 import { useLinkManagement } from "@/hooks/useLinkManagement";
 // import { useUserStore } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
+import LoadingSpinner from "./ui/loading-spinner";
 
 const DashboardComponent = () => {
   const [formData, setFormData] = useState({ longUrl: "", header: "" });
@@ -142,7 +143,7 @@ const DashboardComponent = () => {
         </CardContent>
       </Card>
       {isLoading ? (
-        <p>Loading...</p>
+        <p><LoadingSpinner/></p>
       ) : error ? (
         <p>Error: {error}</p>
       ) : (

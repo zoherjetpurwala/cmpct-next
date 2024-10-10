@@ -37,67 +37,66 @@ export default function LandingPage() {
     }
   }, [session, router]);
 
-  const handleLogin = useCallback(async (e) => {
-    e.preventDefault();
-    setAuthState((prev) => ({ ...prev, isLoading: true }));
-    const formData = Object.fromEntries(new FormData(e.target));
-  
-    try {
-      const result = await signIn("credentials", {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-  
-      if (result.error) {
-        toast.error(result.error || "Login failed. Please try again.");
-      } else {
-        toast.success("Login successful.");
-        router.push("/app");
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred. Please try again.");
-      console.log(error);
-      
-    } finally {
-      setAuthState((prev) => ({ ...prev, isLoading: false }));
-    }
-  }, [router]);
-
-  const handleSignUp = useCallback(
+  const handleLogin = useCallback(
     async (e) => {
       e.preventDefault();
       setAuthState((prev) => ({ ...prev, isLoading: true }));
-
       const formData = Object.fromEntries(new FormData(e.target));
 
       try {
-        const response = await fetch(`/api/auth/signup`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+        const result = await signIn("credentials", {
+          redirect: false,
+          email: formData.email,
+          password: formData.password,
         });
 
-        if (response.ok) {
-          toast.success("Sign-up successful. Please log in.");
-          setAuthState((prev) => ({
-            ...prev,
-            isSignUpModalOpen: false,
-            isLoginModalOpen: true,
-          }));
+        if (result.error) {
+          toast.error(result.error || "Login failed. Please try again.");
         } else {
-          const errorData = await response.json();
-          toast.error(errorData?.message || "Sign-up failed. Please try again.");
+          toast.success("Login successful.");
+          router.push("/app");
         }
       } catch (error) {
         toast.error("An unexpected error occurred. Please try again.");
-        console.error("Sign-up error:", error);
+        console.log(error);
       } finally {
         setAuthState((prev) => ({ ...prev, isLoading: false }));
       }
     },
-    []
+    [router]
   );
+
+  const handleSignUp = useCallback(async (e) => {
+    e.preventDefault();
+    setAuthState((prev) => ({ ...prev, isLoading: true }));
+
+    const formData = Object.fromEntries(new FormData(e.target));
+
+    try {
+      const response = await fetch(`/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success("Sign-up successful. Please log in.");
+        setAuthState((prev) => ({
+          ...prev,
+          isSignUpModalOpen: false,
+          isLoginModalOpen: true,
+        }));
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData?.message || "Sign-up failed. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
+      console.error("Sign-up error:", error);
+    } finally {
+      setAuthState((prev) => ({ ...prev, isLoading: false }));
+    }
+  }, []);
 
   // Return null if user is already logged in (to avoid rendering unnecessary content)
   if (status === "loading") return null;
@@ -227,27 +226,59 @@ const HeroSection = ({ onSignUpClick }) => (
   </section>
 );
 
-const AuthModal = ({ type, isOpen, onOpenChange, onSubmit, title, description, buttonText, isLoading }) => (
+const AuthModal = ({
+  type,
+  isOpen,
+  onOpenChange,
+  onSubmit,
+  title,
+  description,
+  buttonText,
+  isLoading,
+}) => (
   <Dialog open={isOpen} onOpenChange={onOpenChange}>
-    <DialogContent>
+    <DialogContent className="bg-white sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle className="text-blue-900">{title}</DialogTitle>
-        <DialogDescription className="text-gray-600">{description}</DialogDescription>
+        <DialogTitle className="text-blue-900 text-2xl text-center">
+          {type === "SignUp" ? (
+            <>
+              SignUp for <span className={`${baumans.className}`}>cmpct.</span>
+            </>
+          ) : (
+            <>
+              Login to <span className={`${baumans.className}`}>cmpct.</span>
+            </>
+          )}
+        </DialogTitle>
+        <DialogDescription className="text-center text-gray-500">
+          {description}
+        </DialogDescription>
       </DialogHeader>
-      <form onSubmit={onSubmit} className="flex flex-col">
+      <form onSubmit={onSubmit} className="flex flex-col space-y-4">
         {type === "SignUp" && (
           <>
             <Label htmlFor={`${type}-name`}>Name</Label>
             <Input id={`${type}-name`} name="name" type="text" required />
             <Label htmlFor={`${type}-phone`}>Phone</Label>
-            <Input id={`${type}-phone`} name="phone" type="tel" pattern="^\d{10}$" required />
+            <Input
+              id={`${type}-phone`}
+              name="phone"
+              type="tel"
+              pattern="^\d{10}$"
+              required
+            />
           </>
         )}
         <Label htmlFor={`${type}-email`}>Email</Label>
         <Input id={`${type}-email`} name="email" type="email" required />
         <Label htmlFor={`${type}-password`}>Password</Label>
-        <Input id={`${type}-password`} name="password" type="password" required />
-        <Button type="submit" className="mt-4" disabled={isLoading}>
+        <Input
+          id={`${type}-password`}
+          name="password"
+          type="password"
+          required
+        />
+        <Button type="submit" className="mt-4 bg-blue-950" disabled={isLoading}>
           {isLoading ? (
             <>
               Loading... <Loader2 className="animate-spin h-5 w-5 ml-2" />
@@ -455,4 +486,3 @@ const TestimonialCard = ({ quote, author, company }) => (
     </div>
   </div>
 );
-
