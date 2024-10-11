@@ -27,6 +27,7 @@ import { useLinkManagement } from "@/hooks/useLinkManagement";
 // import { useUserStore } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import LoadingSpinner from "./ui/loading-spinner";
+import PaymentButton from "./ui/payment_button";
 
 const DashboardComponent = () => {
   const [formData, setFormData] = useState({ longUrl: "", header: "" });
@@ -107,6 +108,7 @@ const DashboardComponent = () => {
   return (
     <>
       <Card className="rounded-2xl border border-blue-800/25 mb-4">
+      <PaymentButton userId={session?.user.id} plan={"basic"}/>
         <CardHeader>
           <CardTitle>Shorten a URL</CardTitle>
           <CardDescription>
