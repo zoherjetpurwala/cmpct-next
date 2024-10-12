@@ -5,8 +5,9 @@ export const useLinkManagement = () => {
   const [shortenedLinks, setShortenedLinks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { data: session } = useSession(); // Use NextAuth session
+  const { data: session } = useSession(); 
 
+  
   const fetchUserLinks = useCallback(async () => {
     if (!session?.user.id) {
       console.log("User is not logged in or ID is not available.");
@@ -28,7 +29,6 @@ export const useLinkManagement = () => {
         throw new Error("Failed to fetch user links");
       }
 
-      // const data = await response.json();
       const formattedLinks = data.map((link) => ({
         original: link.longUrl,
         shortened: `${process.env.NEXT_PUBLIC_DOMAIN}/${link.header ? `${link.header}/` : ""}${link.shortCode}`,
