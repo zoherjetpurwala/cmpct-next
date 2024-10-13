@@ -87,3 +87,48 @@ main {
     @apply bg-background text-foreground;
   }
 }
+
+.blinking-cursor {
+  font-weight: 100;
+  font-size: 30px;
+  color: white;
+  -webkit-animation: blink 1s infinite;
+  -moz-animation: blink 1s infinite;
+  -animation: blink 1s infinite;
+}
+
+@-webkit-keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-moz-keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

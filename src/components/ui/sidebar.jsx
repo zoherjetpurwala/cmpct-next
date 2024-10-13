@@ -20,7 +20,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
 
   return (
     <div
-      className={`w-64 bg-blue-900 text-white p-6 fixed inset-y-0 left-0 transform rounded-tr-2xl rounded-br-2xl z-30
+      className={`w-64 bg-blue-950 text-white p-6 fixed inset-y-0 left-0 transform rounded-tr-2xl rounded-br-2xl z-30
       ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       md:translate-x-0 transition-transform duration-200 ease-in-out`}
     >
@@ -41,7 +41,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
         <Button
           variant="ghost"
           className={`w-full justify-start rounded-xl ${
-            activeTab === "dashboard" ? "bg-blue-600 text-white" : ""
+            activeTab === "dashboard" ? "bg-blue-800 text-white" : ""
           }`}
           onClick={() => navigateTo("/app/dashboard", "dashboard")}
         >
@@ -50,7 +50,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
         <Button
           variant="ghost"
           className={`w-full justify-start rounded-xl ${
-            activeTab === "myLinks" ? "bg-blue-600 text-white" : ""
+            activeTab === "myLinks" ? "bg-blue-800 text-white" : ""
           }`}
           onClick={() => navigateTo("/app/mylinks", "myLinks")}
         >
@@ -59,7 +59,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
         <Button
           variant="ghost"
           className={`w-full justify-start rounded-xl ${
-            activeTab === "analytics" ? "bg-blue-600 text-white" : ""
+            activeTab === "analytics" ? "bg-blue-800 text-white" : ""
           }`}
           onClick={() => navigateTo("/app/analytics", "analytics")}
         >
@@ -68,11 +68,20 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
         <Button
           variant="ghost"
           className={`w-full justify-start rounded-xl ${
-            activeTab === "profile" ? "bg-blue-600 text-white" : ""
+            activeTab === "profile" ? "bg-blue-800 text-white" : ""
           }`}
           onClick={() => navigateTo("/app/profile", "profile")}
         >
           <User className="mr-2 h-4 w-4" /> Profile
+        </Button>
+        <Button
+          variant="ghost"
+          className={`w-full justify-start rounded-xl ${
+            activeTab === "docs" ? "bg-blue-800 text-white" : ""
+          }`}
+          onClick={() => navigateTo("/app/docs", "docs")}
+        >
+          <User className="mr-2 h-4 w-4" /> Docs
         </Button>
       </nav>
     </div>

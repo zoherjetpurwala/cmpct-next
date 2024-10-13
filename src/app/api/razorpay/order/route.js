@@ -3,9 +3,9 @@ import Razorpay from "razorpay";
 
 const getAmountForPlan = (plan) => {
   const planPrices = {
-    basic: 5000, // in paise (₹50)
-    pro: 10000, // in paise (₹100)
-    enterprise: 20000, // in paise (₹200)
+    basic: 8900, // in paise (₹89)
+    pro: 18900, // in paise (₹189)
+    enterprise: 38900, // in paise (₹389)
   };
   return planPrices[plan];
 };

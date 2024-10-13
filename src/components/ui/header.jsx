@@ -33,15 +33,15 @@ const Header = ({ toggleSidebar, activeTab }) => {
   const router = useRouter();
   const { data: session, status } = useSession(); // Use NextAuth session
 
-  // useEffect(() => {
-  //   if (status === "unauthenticated") {
-  //     router.push("/");
-  //   }
-  // }, [status, router]);
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
 
-  // if (status === "loading") {
-  //   return <div>Loading...</div>;
-  // }
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
 
   const getTitle = () => {
     switch (activeTab) {
@@ -71,17 +71,17 @@ const Header = ({ toggleSidebar, activeTab }) => {
   };
 
   return (
-    <header className="bg-blue-800/5 backdrop-blur-3xl border border-blue-800/25 p-4 flex justify-between items-center mx-4 mt-3 rounded-2xl">
+    <header className="bg-blue-950 backdrop-blur-3xl border border-blue-800/25 p-4 flex justify-between items-center mx-4 mt-3 rounded-2xl text-white">
       <Button variant="ghost" onClick={toggleSidebar} className="md:hidden">
         <Menu className="h-6 w-6" />
       </Button>
       <h2
-        className={`${baumans.className} text-2xl font-semibold text-blue-800 md:hidden`}
+        className={`${baumans.className} text-2xl font-semibold  md:hidden`}
       >
         cmpct.
       </h2>
 
-      <h2 className={`text-xl  text-blue-800 max-md:hidden`}>{getTitle()}</h2>
+      <h2 className={`text-xl   max-md:hidden`}>{getTitle()}</h2>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

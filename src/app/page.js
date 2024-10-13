@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { WobbleCard } from "@/components/ui/wobble-card";
 import { toast } from "sonner";
 import { signIn, useSession } from "next-auth/react";
+import TextUI from "@/components/ui/text-ui";
 
 const baumans = Baumans({ weight: "400", subsets: ["latin"] });
 
@@ -163,7 +164,7 @@ export default function LandingPage() {
 }
 
 const Header = ({ onLoginClick, onSignUpClick }) => (
-  <header className="w-[95%] md:w-[85%] mt-5 p-4 px-5 md:px-10 flex shadow-lg bg-white/45 justify-between items-center rounded-full z-10 border border-blue-900/30 backdrop-blur-sm">
+  <header className="w-[95%] md:w-[85%] mt-5 p-4 px-5 md:px-10 flex shadow-lg shadow-blue-800/35 bg-white/45 justify-between items-center rounded-full z-10 border border-blue-900/30 backdrop-blur-sm">
     <h1 className={`${baumans.className} md:text-5xl text-4xl text-blue-800`}>
       cmpct.
     </h1>
@@ -197,7 +198,11 @@ const HeroSection = ({ onSignUpClick }) => (
       >
         Create short, branded links in seconds and track their performance with
         our powerful analytics.
+        
       </motion.p>
+
+      <TextUI />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -293,16 +298,16 @@ const AuthModal = ({
 );
 
 const FeaturesSection = () => (
-  <section className="bg-white py-10">
+  <section className="bg-white py-32 border-b-2 border-blue-900/50 rounded-b-3xl">
     <div className="container mx-auto px-4">
-      <h3 className="py-10 font-bold mb-6 relative z-10 text-4xl bg-clip-text text-transparent bg-gradient-to-b to-[90%] from-blue-500 to-blue-900 text-center font-sans">
+      <h3 className="pb-20 font-bold  relative z-10 text-4xl bg-clip-text text-transparent bg-gradient-to-b to-[90%] from-blue-500 to-blue-900 text-center font-sans">
         Powerful Features
       </h3>
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-3 gap-8 md:gap-20">
         <FeatureCard
           icon={<Link className="w-8 h-8 text-blue-900" />}
-          title="Custom Short Links"
-          description="Create branded and memorable URLs that reflect your brand identity."
+          title="TRAI Compliant"
+          description="Create TRAI Compliant links with HEADER support that reflect your brand identity."
         />
         <FeatureCard
           icon={<ArrowRight className="w-8 h-8 text-blue-900" />}

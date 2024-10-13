@@ -24,7 +24,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
     }
 
-    // Check user's free tier limits
     if (user.currentTier === 'free') {
       if (user.linkCount >= 10) {
         return NextResponse.json(
@@ -40,38 +39,83 @@ export async function POST(request) {
         );
       }
 
-      // Increment the user's API call count
       user.apiCallsToday += 1;
     }
 
-    // Generate a unique short code for the URL
     const shortCode = nanoid(5);
 
-    // Create the new URL document with initial values
     const url = new urlModel({
       longUrl,
       shortCode,
-      clickCount: 0, // Initialize click count
-      header: header || null, // Optional header
-      user: user._id, // Link the URL to the user
+      clickCount: 0,
+      header: header || null,
+      user: user._id,
     });
 
-    // Save the new URL document
     await url.save();
 
-    // Increment the user's link count
     user.linkCount += 1;
     await user.save();
 
-    // Construct the short URL based on whether a header is present
     const shortUrl = header
       ? `${process.env.NEXT_PUBLIC_DOMAIN}/${header}/${shortCode}`
       : `${process.env.NEXT_PUBLIC_DOMAIN}/${shortCode}`;
 
-    // Return the short URL
     return NextResponse.json({ shortUrl });
   } catch (error) {
     console.error('Error creating short URL:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(request, { params }) {
+  console.log("Request received");
+  const { path } = params;
+  console.log("Incoming Path:", path);
+  
+  const accessToken = request.headers.get('Authorization')?.split(' ')[1];
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Access token is required' }, { status: 401 });
+  }
+
+  try {
+    await connectToDatabase();
+    
+    // Validate the user by access token
+    const user = await userModel.findOne({ accessToken });
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
+    }
+
+    let urlData;
+    if (path.length === 2) {
+      const [header, shortCode] = path;
+      urlData = await urlModel.findOne({ shortCode, header, user: user._id });
+    } else if (path.length === 1) {
+      const [shortCode] = path;
+      urlData = await urlModel.findOne({ shortCode, user: user._id });
+    } else {
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+    }
+
+    if (!urlData) {
+      return NextResponse.json({ error: "URL not found" }, { status: 404 });
+    }
+
+    // Simplified visit logging
+    const visit = {
+      timestamp: new Date(),
+    };
+
+    // Increment the click count and save the visit data
+    urlData.clickCount += 1;
+    urlData.visits.push(visit);
+    await urlData.save();
+
+    // Return the long URL
+    return NextResponse.json({ longUrl: urlData.longUrl });
+  } catch (error) {
+    console.error("Error in URL shortener API:", error);
+    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
 }

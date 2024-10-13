@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
+
 import {
   Card,
   CardContent,
@@ -24,23 +26,37 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useLinkManagement } from "@/hooks/useLinkManagement";
-// import { useUserStore } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import LoadingSpinner from "./ui/loading-spinner";
-import PaymentButton from "./ui/payment_button";
 
 const DashboardComponent = () => {
   const [formData, setFormData] = useState({ longUrl: "", header: "" });
   const { shortenedLinks, isLoading, error, fetchUserLinks, addNewLink } =
     useLinkManagement();
-  // const { user } = useUserStore();
-  const { data: session } = useSession(); // Use NextAuth session
-
-  
+  const { data: session } = useSession();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "longUrl") {
+      const normalizedValue = value.trim(); 
+      if (normalizedValue && !/^https?:\/\//i.test(normalizedValue)) {
+        setFormData((prevData) => ({
+          ...prevData,
+          longUrl: `https://${normalizedValue}`,
+        }));
+      } else {
+        setFormData((prevData) => ({
+          ...prevData,
+          longUrl: normalizedValue,
+        }));
+      }
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -108,7 +124,6 @@ const DashboardComponent = () => {
   return (
     <>
       <Card className="rounded-2xl border border-blue-800/25 mb-4">
-      <PaymentButton userId={session?.user.id} plan={"basic"}/>
         <CardHeader>
           <CardTitle>Shorten a URL</CardTitle>
           <CardDescription>
@@ -135,9 +150,10 @@ const DashboardComponent = () => {
               value={formData.header}
               onChange={handleInputChange}
             />
+
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 md:w-1/6"
+              className="bg-blue-950 hover:bg-blue-700 md:w-1/6"
             >
               <span className="">Compact</span>
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -146,7 +162,7 @@ const DashboardComponent = () => {
         </CardContent>
       </Card>
       {isLoading ? (
-        <LoadingSpinner/>
+        <LoadingSpinner />
       ) : error ? (
         <p>Error: {error}</p>
       ) : (

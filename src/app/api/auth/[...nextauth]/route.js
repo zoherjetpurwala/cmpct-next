@@ -30,14 +30,12 @@ export const authOptions = {
         }
         console.log(user);
 
-        // Include other user information you want to store in the session
         return {
           id: user._id,
           email: user.email,
           name: user.name,
           accessToken: user.accessToken,
-          currentTier: user.currentTier, // example field
-          // Add any other fields you need here
+          currentTier: user.currentTier,
         };
       },
     }),
@@ -46,22 +44,24 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.accessToken = user.accessToken; // store accessToken
-        token.currentTier = user.currentTier; // store currentTier
-        // Store other fields you added to user here
+        token.accessToken = user.accessToken;
+        token.currentTier = user.currentTier;
       }
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.id;
-      session.user.accessToken = token.accessToken; // add accessToken to session
-      session.user.currentTier = token.currentTier; // add currentTier to session
-      // Add any other fields from token to session
+      session.user.accessToken = token.accessToken;
+      session.user.currentTier = token.currentTier;
       return session;
     },
   },
   pages: {
     signIn: "/",
+  },
+  session: {
+    maxAge: 24 * 60 * 60,
+    updateAge: 60 * 60,
   },
 };
 
