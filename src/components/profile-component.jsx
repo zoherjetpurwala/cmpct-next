@@ -142,6 +142,7 @@ const PricingSection = ({ user }) => (
   <section className="py-5">
     <div className="grid md:grid-cols-4 gap-8">
       <PricingCard
+        user={user}
         title="Free"
         price="Free"
         features={[
@@ -153,6 +154,7 @@ const PricingSection = ({ user }) => (
         disabled={isTierDisabled("free", user.currentTier)}
       />
       <PricingCard
+        user={user}
         title="Basic"
         price="₹89"
         features={[
@@ -164,6 +166,7 @@ const PricingSection = ({ user }) => (
         disabled={isTierDisabled("basic", user.currentTier)}
       />
       <PricingCard
+        user={user}
         title="Pro"
         price="₹289"
         features={[
@@ -176,6 +179,7 @@ const PricingSection = ({ user }) => (
         disabled={isTierDisabled("pro", user.currentTier)}
       />
       <PricingCard
+        user={user}
         title="Enterprise"
         price="₹489"
         features={[
@@ -190,8 +194,62 @@ const PricingSection = ({ user }) => (
     </div>
   </section>
 );
+const handlePayment = async (userId, plan) => {
+  try {
+    const response = await fetch("/api/razorpay/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, plan }),
+    });
+
+    const data = await response.json();
+
+    const options = {
+      key: process.env.RAZORPAY_KEY_ID,
+      amount: data.amount,
+      currency: "INR",
+      name: "cmpct.",
+      description: "Plan Subscription",
+      order_id: data.id,
+      handler: async function (response) {
+        const verifyResponse = await fetch("/api/razorpay/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            userId,
+            plan,
+          }),
+        });
+
+        const result = await verifyResponse.json();
+
+        if (result.success) {
+          alert("Payment successful! Your plan has been upgraded.");
+        } else {
+          alert("Payment verification failed.");
+        }
+      },
+      theme: {
+        color: "#3399cc",
+      },
+    };
+
+    const razorpayInstance = new window.Razorpay(options);
+    razorpayInstance.open();
+  } catch (error) {
+    console.error("Error processing payment", error);
+  }
+};
 
 const PricingCard = ({
+  user,
   title,
   price,
   features,
@@ -215,6 +273,7 @@ const PricingCard = ({
     </ul>
     {!highlighted && (
       <Button
+        onClick={() => handlePayment(user.id, title.toLowerCase())}
         className={`w-full ${!disabled ? "bg-blue-900" : ""} ${
           highlighted ? "bg-blue-900" : ""
         }`}
