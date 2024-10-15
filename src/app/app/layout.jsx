@@ -4,18 +4,26 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
+import { useSession } from "next-auth/react";
 
 const AppLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const pathname = usePathname();
   const router = useRouter();
+  const { status } = useSession(); // Use NextAuth session
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   useEffect(() => {
+    // Redirect to home if unauthenticated
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+
+    // Set active tab based on the current pathname
     if (pathname === "/app/dashboard") {
       setActiveTab("dashboard");
     } else if (pathname === "/app/mylinks") {
@@ -29,7 +37,11 @@ const AppLayout = ({ children }) => {
     } else {
       router.push("/app/dashboard");
     }
-  }, [pathname, router]);
+  }, [status, pathname, router]);
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex">

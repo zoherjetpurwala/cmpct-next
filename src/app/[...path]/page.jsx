@@ -3,10 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-async function fetchRedirectUrl(path) {
-  
+async function fetchRedirectUrl(path, screenResolution) {
   const response = await fetch(`/api/v1/${path.join("/")}`, {
     method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Screen-Resolution": screenResolution,
+    },
   });
   
   if (!response.ok) throw new Error("Failed to fetch redirect URL");
@@ -16,12 +19,12 @@ async function fetchRedirectUrl(path) {
 export default function ShortUrlPage({ params }) {
   const { path } = params;
   const router = useRouter();
-  
 
   useEffect(() => {
     async function redirect() {
       try {
-        const data = await fetchRedirectUrl(path);
+        const screenResolution = `${window.screen.width}x${window.screen.height}`;
+        const data = await fetchRedirectUrl(path, screenResolution);
         if (data.longUrl) {
           router.push(data.longUrl);
         } else {

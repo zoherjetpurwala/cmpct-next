@@ -31,7 +31,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
   const router = useRouter();
-  const { data: session, status } = useSession(); // Use NextAuth session
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -118,7 +118,7 @@ export default Header;
 function AuthModal({ isOpen, onOpenChange, onSubmit, loading }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white sm:max-w-[425px]">
+      <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl">Do you want to logout?</DialogTitle>
         </DialogHeader>
@@ -130,7 +130,7 @@ function AuthModal({ isOpen, onOpenChange, onSubmit, loading }) {
             }}
             className="space-y-4"
           >
-            <Button type="submit" className={`bg-red-600`} disabled={loading}>
+            <Button type="submit" className={`bg-red-600 max-md:w-full`} disabled={loading}>
               {loading ? "Logging out..." : "Logout"}
             </Button>
           </form>

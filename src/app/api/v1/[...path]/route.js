@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
+import geoip from 'geoip-lite'; // You need to install this library for geolocation
+
 
 export async function GET(request, { params }) {
   console.log("Request received");
@@ -25,7 +27,27 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
-    // Increment the click count and save the visit data
+    // Capture visit analytics data
+    const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "8.8.8.8"; // fallback to Google DNS IP for testing
+    const userAgent = request.headers.get("user-agent");
+    const referrer = request.headers.get("referer") || "Direct";
+    const geo = geoip.lookup(ipAddress);
+
+    const visitData = {
+      ipAddress,
+      userAgent,
+      location: geo ? `${geo.city}, ${geo.region}, ${geo.country}` : "Unknown",
+      device: getDeviceType(userAgent),
+      os: getOperatingSystem(userAgent),
+      browser: getBrowser(userAgent),
+      referrer,
+      screenResolution: "Unknown", // Will be set on the client-side
+    };
+
+    // Add visit data to the visits array
+    urlData.visits.push(visitData);
+
+    // Increment the click count and save
     urlData.clickCount += 1;
     await urlData.save();
 
@@ -35,4 +57,27 @@ export async function GET(request, { params }) {
     console.error("Error in URL shortener API:", error);
     return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
+}
+
+// Utility functions to extract device, OS, and browser information
+function getDeviceType(userAgent) {
+  if (/mobile/i.test(userAgent)) return "Mobile";
+  if (/tablet/i.test(userAgent)) return "Tablet";
+  return "Desktop";
+}
+
+function getOperatingSystem(userAgent) {
+  if (/windows/i.test(userAgent)) return "Windows";
+  if (/macintosh|mac os x/i.test(userAgent)) return "Mac OS";
+  if (/android/i.test(userAgent)) return "Android";
+  if (/iphone|ipad|ipod/i.test(userAgent)) return "iOS";
+  return "Unknown";
+}
+
+function getBrowser(userAgent) {
+  if (/chrome/i.test(userAgent)) return "Chrome";
+  if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) return "Safari";
+  if (/firefox/i.test(userAgent)) return "Firefox";
+  if (/msie|trident/i.test(userAgent)) return "Internet Explorer";
+  return "Unknown";
 }
