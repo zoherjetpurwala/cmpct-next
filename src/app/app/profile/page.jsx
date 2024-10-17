@@ -1,8 +1,7 @@
 "use client";
 
-import ProfileComponent from "@/components/profile-component";
+import ProfileComponent from "@/components/ProfileComponent";
 
-// import ProfileComponent from "@/components/ProfileComponent";
 
 const ProfilePage = () => {
   

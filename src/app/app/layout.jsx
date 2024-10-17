@@ -5,25 +5,24 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
 import { useSession } from "next-auth/react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const AppLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const pathname = usePathname();
   const router = useRouter();
-  const { status } = useSession(); // Use NextAuth session
+  const { status } = useSession();
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   useEffect(() => {
-    // Redirect to home if unauthenticated
     if (status === "unauthenticated") {
       router.push("/");
     }
 
-    // Set active tab based on the current pathname
     if (pathname === "/app/dashboard") {
       setActiveTab("dashboard");
     } else if (pathname === "/app/mylinks") {
@@ -40,7 +39,11 @@ const AppLayout = ({ children }) => {
   }, [status, pathname, router]);
 
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (

@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input"; // Import Input component
+import LoadingSpinner from "./ui/loading-spinner";
 
 const MyLinksComponent = () => {
   const { shortenedLinks, isLoading, error } = useLinkManagement();
@@ -44,7 +45,7 @@ const MyLinksComponent = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState(""); // State for search input
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p><LoadingSpinner/></p>;
   if (error) return <p>Error: {error}</p>;
 
   const sortedLinks = [...shortenedLinks].sort((a, b) => {
