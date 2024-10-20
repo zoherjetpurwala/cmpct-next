@@ -25,17 +25,29 @@ const UserSchema = new mongoose.Schema({
   },
   currentTier: {
     type: String,
-    enum: ["basic", "pro", "enterprise", "free"], // Ensure 'free' is included here
+    enum: ["basic", "pro", "enterprise", "free"],
     required: true,
-    default: "free", // Default value can still be 'free'
+    default: "free",
   },
   apiCallsToday: {
     type: Number,
-    default: 0,  // Tracks daily API call count
+    default: 0,
+  },
+  apiCallResetTime: {
+    type: Date, // To track when the API calls were last reset
+    default: Date.now,
   },
   linkCount: {
     type: Number,
-    default: 0,  // Tracks number of URLs created
+    default: 0,
+  },
+  linksThisMonth: {
+    type: Number,
+    default: 0, // Tracks the number of links created in the current month
+  },
+  linkLimitResetDate: {
+    type: Date, // To track when the link count resets each month
+    default: Date.now,
   },
   currentTierId: {
     type: mongoose.Schema.Types.ObjectId,

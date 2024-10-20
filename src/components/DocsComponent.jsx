@@ -1,9 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Code, Book, Shield } from "lucide-react";
+import {  Code,  Shield } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -56,6 +55,7 @@ export function ApiDocsComponent() {
           </section>
         </CardContent>
       </Card>
+
       <Card className="mb-3 border-l-4 border-blue-800/25 border-l-blue-900">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center">
@@ -134,6 +134,7 @@ print(response.json())`}
         </CardContent>
       </Card>
 
+      {/* Updated GET Request Section */}
       <Card className="border-l-4  border-blue-800/25 border-l-blue-900">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center">
@@ -142,17 +143,17 @@ print(response.json())`}
         </CardHeader>
         <CardContent>
           <h3 className="text-xl font-semibold mb-2 text-blue-900">
-            GET /api/v1/compact/:path
+          GET /api/v1/compact?shortCode={"shortCode"}&header={"optional-header"}
           </h3>
           <p className="mb-4 text-gray-700">
             Retrieves the original long URL from a short URL.
           </p>
 
           <p className="mb-4 text-gray-700">
-            The :path parameter can be either:
+            The query parameters required:
             <ul className="list-disc list-inside mt-2">
-              <li>:shortCode</li>
-              <li>:header/:shortCode</li>
+              <li><strong>shortCode</strong> - The short code for the URL.</li>
+              <li><strong>header</strong> - (Optional) Custom header, if applicable.</li>
             </ul>
           </p>
 
@@ -172,7 +173,7 @@ print(response.json())`}
             </TabsList>
             <TabsContent value="js">
               <pre className="bg-gray-100 p-3 rounded-lg text-sm overflow-x-auto">
-                {`fetch('${process.env.NEXT_PUBLIC_DOMAIN}/api/v1/compact/abcde', {
+                {`fetch('${process.env.NEXT_PUBLIC_DOMAIN}/api/v1/compact?shortCode=abcde&header=optional-header', {
       method: 'GET',
       headers: {
         'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
@@ -187,7 +188,7 @@ print(response.json())`}
               <pre className="bg-gray-100 p-3 rounded-lg text-sm overflow-x-auto">
                 {`import requests
 
-    url = '${process.env.NEXT_PUBLIC_DOMAIN}/api/v1/compact/abcde'
+    url = '${process.env.NEXT_PUBLIC_DOMAIN}/api/v1/compact?shortCode=abcde&header=optional-header'
     headers = {
         'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
     }
