@@ -55,7 +55,7 @@ export default function ProfileComponent() {
               <Badge
                 className={`${
                   tierColors[session?.user.currentTier]
-                } text-white px-5 py-1`}
+                } bg-blue-900 text-white px-5 py-1`}
               >
                 {session?.user.currentTier.charAt(0).toUpperCase() +
                   session?.user.currentTier.slice(1)}

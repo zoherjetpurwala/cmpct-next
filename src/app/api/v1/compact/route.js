@@ -31,7 +31,7 @@ export async function POST(request) {
     }
 
     let linkLimit;
-    if (user.currentTier === 'free') linkLimit = 30;
+    if (user.currentTier === 'free') linkLimit = 500;
     else if (user.currentTier === 'basic') linkLimit = 50000;
     else linkLimit = Infinity;
 
