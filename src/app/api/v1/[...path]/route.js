@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import geoip from "geoip-lite"; // You need to install this library for geolocation
+import { getClientIp } from "@/lib/getip";
 
 export async function GET(request, { params }) {
   console.log("Request received");
@@ -65,36 +66,36 @@ export async function GET(request, { params }) {
   }
 }
 
-const getClientIp = (req) => {
-  if (process.env.NODE_ENV === "development") {
-    return "203.192.226.242";
-  }
-  // Cloudflare
-  const cfIp = req.headers.get("cf-connecting-ip");
-  if (cfIp) return cfIp;
+// const getClientIp = (req) => {
+//   if (process.env.NODE_ENV === "development") {
+//     return "203.192.226.242";
+//   }
+//   // Cloudflare
+//   const cfIp = req.headers.get("cf-connecting-ip");
+//   if (cfIp) return cfIp;
 
-  // Vercel specific
-  const vercelIp = req.headers.get("x-vercel-forwarded-for");
-  if (vercelIp) return vercelIp;
+//   // Vercel specific
+//   const vercelIp = req.headers.get("x-vercel-forwarded-for");
+//   if (vercelIp) return vercelIp;
 
-  // Standard forwarded headers
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    // Split and get first non-private IP
-    const ips = forwardedFor.split(",");
-    const clientIp = ips.find(
-      (ip) =>
-        !ip.startsWith("10.") &&
-        !ip.startsWith("172.16.") &&
-        !ip.startsWith("192.168.")
-    );
-    return clientIp || ips[0];
-  }
+//   // Standard forwarded headers
+//   const forwardedFor = req.headers.get("x-forwarded-for");
+//   if (forwardedFor) {
+//     // Split and get first non-private IP
+//     const ips = forwardedFor.split(",");
+//     const clientIp = ips.find(
+//       (ip) =>
+//         !ip.startsWith("10.") &&
+//         !ip.startsWith("172.16.") &&
+//         !ip.startsWith("192.168.")
+//     );
+//     return clientIp || ips[0];
+//   }
 
-  // Remove IPv6 prefix if present
-  const ip = req.ip || req.socket?.remoteAddress || "";
-  return ip.replace(/^::ffff:/, "");
-};
+//   // Remove IPv6 prefix if present
+//   const ip = req.ip || req.socket?.remoteAddress || "";
+//   return ip.replace(/^::ffff:/, "");
+// };
 
 // Utility functions to extract device, OS, and browser information
 function getDeviceType(userAgent) {
