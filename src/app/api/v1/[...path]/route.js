@@ -66,22 +66,34 @@ export async function GET(request, { params }) {
 }
 
 const getClientIp = (req) => {
-  if (process.env.NODE_ENV === 'development') {
-    return '127.0.0.1'
+  if (process.env.NODE_ENV === "development") {
+    return "203.192.226.242";
   }
   // Cloudflare
-  if (req.headers.get("cf-connecting-ip")) {
-    return req.headers.get("cf-connecting-ip");
-  }
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+
+  // Vercel specific
+  const vercelIp = req.headers.get("x-vercel-forwarded-for");
+  if (vercelIp) return vercelIp;
 
   // Standard forwarded headers
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
+    // Split and get first non-private IP
+    const ips = forwardedFor.split(",");
+    const clientIp = ips.find(
+      (ip) =>
+        !ip.startsWith("10.") &&
+        !ip.startsWith("172.16.") &&
+        !ip.startsWith("192.168.")
+    );
+    return clientIp || ips[0];
   }
 
-  // Fallback to direct connection IP
-  return req.ip || req.socket.remoteAddress;
+  // Remove IPv6 prefix if present
+  const ip = req.ip || req.socket?.remoteAddress || "";
+  return ip.replace(/^::ffff:/, "");
 };
 
 // Utility functions to extract device, OS, and browser information
