@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
-import geoip from 'geoip-lite'; // You need to install this library for geolocation
-
+import geoip from "geoip-lite"; // You need to install this library for geolocation
 
 export async function GET(request, { params }) {
   console.log("Request received");
@@ -20,7 +19,10 @@ export async function GET(request, { params }) {
       const [shortCode] = path;
       urlData = await urlModel.findOne({ shortCode });
     } else {
-      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid URL format" },
+        { status: 400 }
+      );
     }
 
     if (!urlData) {
@@ -28,7 +30,8 @@ export async function GET(request, { params }) {
     }
 
     // Capture visit analytics data
-    const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "8.8.8.8"; // fallback to Google DNS IP for testing
+    const ipAddress = getClientIp(request);
+    console.log(ipAddress);
     const userAgent = request.headers.get("user-agent");
     const referrer = request.headers.get("referer") || "Direct";
     const geo = geoip.lookup(ipAddress);
@@ -41,7 +44,7 @@ export async function GET(request, { params }) {
       os: getOperatingSystem(userAgent),
       browser: getBrowser(userAgent),
       referrer,
-      screenResolution: "Unknown", // Will be set on the client-side
+      screenResolution: "Unknown",
     };
 
     // Add visit data to the visits array
@@ -55,9 +58,31 @@ export async function GET(request, { params }) {
     return NextResponse.json({ longUrl: urlData.longUrl });
   } catch (error) {
     console.error("Error in URL shortener API:", error);
-    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", details: error.message },
+      { status: 500 }
+    );
   }
 }
+
+const getClientIp = (req) => {
+  if (process.env.NODE_ENV === 'development') {
+    return '127.0.0.1'
+  }
+  // Cloudflare
+  if (req.headers.get("cf-connecting-ip")) {
+    return req.headers.get("cf-connecting-ip");
+  }
+
+  // Standard forwarded headers
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  // Fallback to direct connection IP
+  return req.ip || req.socket.remoteAddress;
+};
 
 // Utility functions to extract device, OS, and browser information
 function getDeviceType(userAgent) {

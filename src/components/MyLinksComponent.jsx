@@ -42,8 +42,8 @@ const MyLinksComponent = () => {
     direction: "ascending",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [searchTerm, setSearchTerm] = useState(""); // State for search input
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   if (isLoading) return <p><LoadingSpinner/></p>;
   if (error) return <p>Error: {error}</p>;
@@ -58,7 +58,6 @@ const MyLinksComponent = () => {
     return 0;
   });
 
-  // Filter the links based on search term
   const filteredLinks = sortedLinks.filter(
     (link) =>
       link.original.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,7 +88,6 @@ const MyLinksComponent = () => {
       </CardHeader>
       <CardContent className="md:mt-2">
         <div className="overflow-x-auto">
-          {/* Search Bar */}
           <div className="relative w-full py-2">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4" />
@@ -102,7 +100,6 @@ const MyLinksComponent = () => {
             />
           </div>
 
-          {/* Desktop Table View */}
           <Table className="min-w-full table-fixed hidden md:table">
             <TableHeader>
               <TableRow>

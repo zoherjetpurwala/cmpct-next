@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 
-// Ensure you have DB connection utility ready (dbConnect.js should handle the connection to MongoDB)
 
 export async function POST(request) {
   await connectToDatabase();
