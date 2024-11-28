@@ -31,7 +31,8 @@ export async function GET(request, { params }) {
     }
 
     // Capture visit analytics data
-    const ipAddress = getClientIp(request);
+    const ipAddress =  request.headers['x-real-client-ip'];
+
     console.log(ipAddress);
     const userAgent = request.headers.get("user-agent");
     const referrer = request.headers.get("referer") || "Direct";

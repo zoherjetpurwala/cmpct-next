@@ -15,9 +15,16 @@ export function middleware(req) {
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set('x-real-client-ip', cleanIp)
 
+  console.log("middleware works");
+  
+
   return NextResponse.next({
     request: {
       headers: requestHeaders
     }
   })
 }
+
+export const config = {
+  matcher: '/:path*', 
+};
