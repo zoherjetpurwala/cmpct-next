@@ -1,15 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
-import geoip from "geoip-lite"; // You need to install this library for geolocation
-import { headers } from "next/headers";
-import { getClientIp } from "@/lib/getip";
+import geoip from "geoip-lite";
 
-/** @param {NextRequest} request */
 export async function GET(request, { params }) {
-  //console.log("Request received");
   const { path } = params;
-  //console.log("Incoming Path:", path);
 
   try {
     await connectToDatabase();
@@ -32,7 +27,6 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
-    // Capture visit analytics data
     const ipAddress = request.headers.get("x-real-client-ip") || "IP not found";
     console.log(ipAddress);
 
@@ -51,16 +45,11 @@ export async function GET(request, { params }) {
       screenResolution: "Unknown",
     };
 
-    // Add visit data to the visits array
     urlData.visits.push(visitData);
 
-    // Increment the click count and save
     urlData.clickCount += 1;
     await urlData.save();
 
-    //console.log("Visit recorded:", visitData);
-
-    // Return the long URL
     return NextResponse.json({ longUrl: urlData.longUrl });
   } catch (error) {
     console.error("Error in URL shortener API:", error);
