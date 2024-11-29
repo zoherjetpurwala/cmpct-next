@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export function middleware(req) {
-  // console.log("Middleware triggered!");
+  console.log("Middleware triggered!");
 
   const ip =
     req.ip ||
@@ -17,9 +17,9 @@ export function middleware(req) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-real-client-ip", cleanIp);
 
-  // console.log(
-  //   "Middleware - Request Headers:",
-  // );
+  console.log(
+    "Middleware - Request Headers:",
+  );
 
   return NextResponse.next({
     request: {
