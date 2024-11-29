@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import geoip from "geoip-lite"; // You need to install this library for geolocation
+import { headers } from "next/headers";
 
+/** @param {NextRequest} request */
 export async function GET(request, { params }) {
   console.log("Request received");
   const { path } = params;
@@ -29,8 +31,11 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
+    const headersList = headers();
+
+
     // Capture visit analytics data
-    const ipAddress = request.headers.get("x-real-client-ip") || "127.0.0.1"; // Updated to use `get()`
+    const ipAddress = headersList.get("x-forwarded-for");
     console.log("IP Address:", ipAddress);
 
     const userAgent = request.headers.get("user-agent");
