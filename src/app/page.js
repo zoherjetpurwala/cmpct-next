@@ -198,7 +198,6 @@ const HeroSection = ({ onSignUpClick }) => (
       >
         Create short, branded links in seconds and track their performance with
         our powerful analytics.
-        
       </motion.p>
 
       <TextUI />

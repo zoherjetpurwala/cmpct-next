@@ -26,16 +26,13 @@ export async function POST(req) {
       );
     }
 
-    // Payment is valid, update the user's tier and record the purchase
     const expirationDate = calculateExpirationDate(plan);
 
-    // Update user tier
     await userModel.findByIdAndUpdate(userId, {
       currentTier: plan,
       currentTierId: new mongoose.Types.ObjectId(),
     });
 
-    // Record the purchase
     const newPurchase = new purchaseModel({
       userId,
       tier: plan,
@@ -56,5 +53,5 @@ export async function POST(req) {
 
 const calculateExpirationDate = (plan) => {
   const today = new Date();
-  return new Date(today.setMonth(today.getMonth() + 1)); // Adds 1 month to current date
+  return new Date(today.setMonth(today.getMonth() + 1));
 };
