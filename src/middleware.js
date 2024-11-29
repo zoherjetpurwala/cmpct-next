@@ -16,6 +16,8 @@ export function middleware(req) {
   requestHeaders.set("x-real-client-ip", cleanIp);
 
   console.log("Middleware - Request Headers:");
+  console.log("ipAddress  " + ip);
+  console.log("ipAddress  " + cleanIp);
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }

@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
     }
 
     const ipAddress = request.headers.get("x-real-client-ip") || "IP not found";
-    console.log(ipAddress);
+    console.log("ipAddress  " + ipAddress);
 
     const userAgent = request.headers.get("user-agent");
     const referrer = request.headers.get("referer") || "Direct";
