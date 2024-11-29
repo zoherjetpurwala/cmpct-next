@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import geoip from "geoip-lite"; // You need to install this library for geolocation
 import { headers } from "next/headers";
+import { getClientIp } from "@/lib/getip";
 
 /** @param {NextRequest} request */
 export async function GET(request, { params }) {
@@ -31,14 +32,8 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
-    const headersList = headers();
-
     // Capture visit analytics data
-    const ipAddress =
-      headersList.get("x-forwarded-for")?.split(",")[0].trim() ||
-      request.ip || // fallback for Next.js dev server
-      "127.0.0.1";
-    console.log("IP Address:", ipAddress);
+    const ipAddress = getClientIp(request);
 
     const userAgent = request.headers.get("user-agent");
     const referrer = request.headers.get("referer") || "Direct";
