@@ -21,3 +21,6 @@ export function middleware(req) {
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
+export const config = {
+  matcher: "/api/v1/:path*",
+};
