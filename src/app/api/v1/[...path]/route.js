@@ -7,9 +7,9 @@ import { getClientIp } from "@/lib/getip";
 
 /** @param {NextRequest} request */
 export async function GET(request, { params }) {
-  console.log("Request received");
+  //console.log("Request received");
   const { path } = params;
-  console.log("Incoming Path:", path);
+  //console.log("Incoming Path:", path);
 
   try {
     await connectToDatabase();
@@ -33,7 +33,8 @@ export async function GET(request, { params }) {
     }
 
     // Capture visit analytics data
-    const ipAddress = getClientIp(request);
+    const ipAddress = request.headers["x-real-client-ip"] || "IP not found";
+    console.log(ipAddress);
 
     const userAgent = request.headers.get("user-agent");
     const referrer = request.headers.get("referer") || "Direct";
@@ -57,7 +58,7 @@ export async function GET(request, { params }) {
     urlData.clickCount += 1;
     await urlData.save();
 
-    console.log("Visit recorded:", visitData);
+    //console.log("Visit recorded:", visitData);
 
     // Return the long URL
     return NextResponse.json({ longUrl: urlData.longUrl });

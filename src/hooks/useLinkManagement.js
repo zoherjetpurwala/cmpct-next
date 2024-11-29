@@ -22,8 +22,6 @@ export const useLinkManagement = () => {
         body: JSON.stringify({ userId: session?.user.id }),
       });
       const data = await response.json();
-      console.log(data);
-
 
       if (!response.ok) {
         throw new Error("Failed to fetch user links");

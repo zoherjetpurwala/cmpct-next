@@ -88,14 +88,14 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
-  console.log("Request received");
+  //console.log("Request received");
 
   const { searchParams } = new URL(request.url);
   const shortCode = searchParams.get('shortCode');
   const header = searchParams.get('header');
 
-  console.log("shortCode:", shortCode);
-  console.log("header:", header);
+  //console.log("shortCode:", shortCode);
+  //console.log("header:", header);
 
   const accessToken = request.headers.get('Authorization')?.split(' ')[1];
   if (!accessToken) {

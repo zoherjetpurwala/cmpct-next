@@ -6,17 +6,17 @@ if (!MONGODB_URI) {
   throw new Error("Please add your MongoDB URI to .env.local");
 }
 
-let isConnected = false; // Track the connection status
+let isConnected = false;
 
 export async function connectToDatabase() {
   if (isConnected) {
-    return; // Return early if already connected
+    return;
   }
 
   try {
     const { connection } = await mongoose.connect(MONGODB_URI);
 
-    isConnected = connection.readyState === 1; // Check if the connection was successful
+    isConnected = connection.readyState === 1;
     console.log("MongoDB connected");
   } catch (error) {
     console.error("Error connecting to MongoDB", error);
