@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import geoip from "geoip-lite"; // You need to install this library for geolocation
@@ -33,9 +33,11 @@ export async function GET(request, { params }) {
 
     const headersList = headers();
 
-
     // Capture visit analytics data
-    const ipAddress = headersList.get("x-forwarded-for");
+    const ipAddress =
+      headersList.get("x-forwarded-for")?.split(",")[0].trim() ||
+      request.ip || // fallback for Next.js dev server
+      "127.0.0.1";
     console.log("IP Address:", ipAddress);
 
     const userAgent = request.headers.get("user-agent");
