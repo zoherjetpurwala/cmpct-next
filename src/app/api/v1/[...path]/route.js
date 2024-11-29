@@ -33,7 +33,7 @@ export async function GET(request, { params }) {
     }
 
     // Capture visit analytics data
-    const ipAddress = request.headers["x-real-client-ip"] || "IP not found";
+    const ipAddress = "127.0.0.1";
     console.log(ipAddress);
 
     const userAgent = request.headers.get("user-agent");
