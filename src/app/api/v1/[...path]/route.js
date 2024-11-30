@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, userAgent } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import urlModel from "@/models/url.model";
 import geoip from "geoip-lite";
@@ -30,17 +30,24 @@ export async function GET(request, { params }) {
     const ipAddress = request.headers.get("x-real-client-ip") || "IP not found";
     console.log("ipAddress  " + ipAddress);
 
-    const userAgent = request.headers.get("user-agent");
+    const agent = userAgent(request);
+    console.log(agent);
+
     const referrer = request.headers.get("referer") || "Direct";
     const geo = geoip.lookup(ipAddress);
 
     const visitData = {
-      ipAddress,
-      userAgent,
+      ipAddress: ipAddress,
+      userAgent: agent.ua,
       location: geo ? `${geo.city}, ${geo.region}, ${geo.country}` : "Unknown",
-      device: getDeviceType(userAgent),
-      os: getOperatingSystem(userAgent),
-      browser: getBrowser(userAgent),
+      device:
+        agent.device.type === "mobile"
+          ? "Mobile"
+          : agent.device.type === "tablet"
+          ? "Tablet"
+          : "Desktop",
+      os: agent.os.name,
+      browser: agent.browser.name,
       referrer,
       screenResolution: "Unknown",
     };
@@ -58,27 +65,4 @@ export async function GET(request, { params }) {
       { status: 500 }
     );
   }
-}
-
-// Utility functions to extract device, OS, and browser information
-function getDeviceType(userAgent) {
-  if (/mobile/i.test(userAgent)) return "Mobile";
-  if (/tablet/i.test(userAgent)) return "Tablet";
-  return "Desktop";
-}
-
-function getOperatingSystem(userAgent) {
-  if (/windows/i.test(userAgent)) return "Windows";
-  if (/macintosh|mac os x/i.test(userAgent)) return "Mac OS";
-  if (/android/i.test(userAgent)) return "Android";
-  if (/iphone|ipad|ipod/i.test(userAgent)) return "iOS";
-  return "Unknown";
-}
-
-function getBrowser(userAgent) {
-  if (/chrome/i.test(userAgent)) return "Chrome";
-  if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) return "Safari";
-  if (/firefox/i.test(userAgent)) return "Firefox";
-  if (/msie|trident/i.test(userAgent)) return "Internet Explorer";
-  return "Unknown";
 }
