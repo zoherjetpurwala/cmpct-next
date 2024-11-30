@@ -6,7 +6,7 @@ export function getClientIp(req) {
     req.headers.get("x-real-ip") ||
     req.headers.get("cf-connecting-ip") ||
     "127.0.0.1";
-    
+
   const cleanIp = ip.replace(/^::ffff:/, "");
 
   return cleanIp;
