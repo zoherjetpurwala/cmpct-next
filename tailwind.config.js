@@ -8,7 +8,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -49,6 +48,16 @@ module.exports = {
           3: "hsl(var(--chart-3))",
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
+        },
+
+        // 🎨 NEW CUSTOM THEME COLORS based on #eb6753
+        themeColor: {
+          DEFAULT: "#eb6753",           // Primary
+          light: "#fce9e6",             // Light background
+          dark: "#c44c39",              // For hover
+          text: "#5a241c",              // For strong headers
+          border: "#f3b1a8",            // Subtle border
+          muted: "#f9d7d0",             // Muted surface
         },
       },
       borderRadius: {

@@ -55,7 +55,7 @@ const AppLayout = ({ children }) => {
         setActiveTab={setActiveTab}
       />
 
-      <div className="w-full flex flex-col min-h-screen md:ml-64">
+      <div className="w-full flex flex-col min-h-screen md:ml-72">
         <Header toggleSidebar={toggleSidebar} activeTab={activeTab} />
 
         <main className="flex-1 p-4 overflow-auto">{children}</main>
