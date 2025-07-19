@@ -98,7 +98,7 @@ export default function ShortUrlPage({ params }) {
         <div className="text-center max-w-md p-6">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Link Not Found</h1>
           <p className="text-gray-600 mb-4">
-            The short URL you're looking for doesn't exist or has expired.
+            The short URL you&apos;re looking for does&apos;nt exist or has expired.
           </p>
           <p className="text-sm text-gray-500">Error: {error}</p>
           <button 
