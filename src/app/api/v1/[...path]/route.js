@@ -1,35 +1,23 @@
+// app/api/v1/[...path]/route.js
 import { NextResponse } from "next/server";
 
-// Wrap everything in try-catch to ensure we always return JSON
 export async function GET(request, { params }) {
   try {
-    console.log('=== API Route Start ===');
+    console.log('=== Enhanced Analytics API Route Start ===');
     console.log('Params:', params);
     console.log('Environment:', process.env.NODE_ENV);
     
-    // Check if required modules can be imported
-    let connectToDatabase, urlModel, userAgent, geoip;
+    // Import modules
+    let supabase, userAgent, geoip;
     
     try {
-      const dbModule = await import("@/lib/db");
-      connectToDatabase = dbModule.connectToDatabase;
-      console.log('✓ Database module imported');
+      const supabaseModule = await import("@/lib/supabase");
+      supabase = supabaseModule.supabase;
+      console.log('✓ Supabase client imported');
     } catch (dbError) {
-      console.error('✗ Database module import failed:', dbError);
+      console.error('✗ Supabase client import failed:', dbError);
       return NextResponse.json(
-        { error: "Database module import failed", details: dbError.message },
-        { status: 500 }
-      );
-    }
-    
-    try {
-      const urlModelModule = await import("@/models/url.model");
-      urlModel = urlModelModule.default;
-      console.log('✓ URL model imported');
-    } catch (modelError) {
-      console.error('✗ URL model import failed:', modelError);
-      return NextResponse.json(
-        { error: "URL model import failed", details: modelError.message },
+        { error: "Database client import failed", details: dbError.message },
         { status: 500 }
       );
     }
@@ -51,7 +39,7 @@ export async function GET(request, { params }) {
       console.log('✓ GeoIP imported');
     } catch (geoError) {
       console.warn('⚠ GeoIP import failed (non-critical):', geoError);
-      geoip = { lookup: () => null }; // Fallback
+      geoip = { lookup: () => null };
     }
     
     // Validate params
@@ -67,39 +55,46 @@ export async function GET(request, { params }) {
     console.log('Processing path:', path);
     
     // Check environment variables
-    if (!process.env.MONGODB_URI) {
-      console.error('✗ MONGODB_URI not found');
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('✗ Supabase configuration missing');
       return NextResponse.json(
         { error: "Database configuration missing" },
         { status: 500 }
       );
     }
-    console.log('✓ MONGODB_URI exists');
+    console.log('✓ Supabase configuration exists');
     
-    // Try to connect to database
-    console.log('Attempting database connection...');
-    try {
-      await connectToDatabase();
-      console.log('✓ Database connected');
-    } catch (dbError) {
-      console.error('✗ Database connection failed:', dbError);
-      return NextResponse.json(
-        { error: "Database connection failed", details: dbError.message },
-        { status: 500 }
-      );
-    }
-    
-    // Query the database
+    // Query the database for URL
     let urlData;
     try {
       if (path.length === 2) {
         const [header, shortCode] = path;
         console.log('Searching with header and shortCode:', { header, shortCode });
-        urlData = await urlModel.findOne({ shortCode, header });
+        
+        const { data, error } = await supabase
+          .from('urls')
+          .select('*')
+          .eq('short_code', shortCode)
+          .eq('header', header)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') throw error;
+        urlData = data;
+        
       } else if (path.length === 1) {
         const [shortCode] = path;
         console.log('Searching with shortCode:', shortCode);
-        urlData = await urlModel.findOne({ shortCode });
+        
+        const { data, error } = await supabase
+          .from('urls')
+          .select('*')
+          .eq('short_code', shortCode)
+          .is('header', null)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') throw error;
+        urlData = data;
+        
       } else {
         console.error('✗ Invalid URL format, path length:', path.length);
         return NextResponse.json(
@@ -121,80 +116,253 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
     
-    console.log('✓ URL found, processing analytics...');
+    console.log('✓ URL found, processing enhanced analytics...');
     
-    // Get IP address
-    const ipAddress = request.headers.get("x-forwarded-for")?.split(',')[0]?.trim() ||
-                     request.headers.get("x-real-ip") ||
-                     request.headers.get("cf-connecting-ip") ||
+    // === ENHANCED ANALYTICS COLLECTION ===
+    
+    // 1. BASIC REQUEST DATA
+    const headers = request.headers;
+    const url = new URL(request.url);
+    
+    // 2. IP AND GEOLOCATION
+    const ipAddress = headers.get("x-forwarded-for")?.split(',')[0]?.trim() ||
+                     headers.get("x-real-ip") ||
+                     headers.get("cf-connecting-ip") ||
+                     headers.get("x-client-ip") ||
                      "Unknown";
-    console.log("IP address:", ipAddress);
     
-    // Get user agent
+    let geo = null;
+    let timezone = null;
+    try {
+      if (ipAddress !== 'Unknown' && geoip.default) {
+        geo = geoip.default.lookup(ipAddress);
+        if (geo) {
+          timezone = geo.timezone;
+        }
+      }
+    } catch (geoError) {
+      console.warn('⚠ Geo lookup failed:', geoError);
+    }
+    
+    // 3. USER AGENT ANALYSIS
     let agent;
     try {
       agent = userAgent(request);
-      console.log('✓ User agent parsed');
     } catch (uaError) {
       console.warn('⚠ User agent parsing failed:', uaError);
       agent = { ua: 'Unknown', device: {}, os: {}, browser: {} };
     }
     
-    // Get geo info
-    let geo = null;
-    try {
-      if (ipAddress !== 'Unknown' && geoip.default) {
-        geo = geoip.default.lookup(ipAddress);
-      }
-      console.log('✓ Geo lookup completed');
-    } catch (geoError) {
-      console.warn('⚠ Geo lookup failed:', geoError);
-    }
-    
-    const referrer = request.headers.get("referer") || "Direct";
-    const screenResolution = request.headers.get("screen-resolution") || "Unknown";
-    
-    const visitData = {
-      ipAddress: ipAddress,
-      userAgent: agent.ua || 'Unknown',
-      location: geo ? `${geo.city || 'Unknown'}, ${geo.region || 'Unknown'}, ${geo.country || 'Unknown'}` : "Unknown",
-      device: agent.device?.type === "mobile" ? "Mobile" : 
-              agent.device?.type === "tablet" ? "Tablet" : "Desktop",
-      os: agent.os?.name || 'Unknown',
-      browser: agent.browser?.name || 'Unknown',
-      referrer,
-      screenResolution,
-      timestamp: new Date()
+    // Enhanced device detection
+    const deviceInfo = {
+      type: agent.device?.type || 'desktop',
+      vendor: agent.device?.vendor || 'Unknown',
+      model: agent.device?.model || 'Unknown',
+      isBot: agent.isBot || false,
+      isMobile: agent.device?.type === 'mobile',
+      isTablet: agent.device?.type === 'tablet',
+      isDesktop: !agent.device?.type || agent.device?.type === 'desktop'
     };
     
-    console.log('Visit data prepared:', visitData);
+    // Browser details
+    const browserInfo = {
+      name: agent.browser?.name || 'Unknown',
+      version: agent.browser?.version || 'Unknown',
+      major: agent.browser?.version?.split('.')[0] || 'Unknown'
+    };
     
-    // Update URL data
-    try {
-      await urlModel.findByIdAndUpdate(
-        urlData._id,
-        {
-          $push: { visits: visitData },
-          $inc: { clickCount: 1 }
+    // Operating System details
+    const osInfo = {
+      name: agent.os?.name || 'Unknown',
+      version: agent.os?.version || 'Unknown',
+      platform: agent.os?.name?.toLowerCase().includes('windows') ? 'Windows' :
+                agent.os?.name?.toLowerCase().includes('mac') ? 'macOS' :
+                agent.os?.name?.toLowerCase().includes('linux') ? 'Linux' :
+                agent.os?.name?.toLowerCase().includes('android') ? 'Android' :
+                agent.os?.name?.toLowerCase().includes('ios') ? 'iOS' : 'Other'
+    };
+    
+    // 4. REFERRER ANALYSIS
+    const referrer = headers.get("referer") || headers.get("referrer") || "Direct";
+    let referrerInfo = {
+      raw: referrer,
+      domain: 'Direct',
+      source: 'Direct',
+      medium: 'Direct',
+      campaign: null,
+      isSearchEngine: false,
+      isSocialMedia: false,
+      isEmail: false
+    };
+    
+    if (referrer && referrer !== "Direct") {
+      try {
+        const referrerUrl = new URL(referrer);
+        referrerInfo.domain = referrerUrl.hostname;
+        
+        // Detect source type
+        const searchEngines = ['google', 'bing', 'yahoo', 'duckduckgo', 'baidu'];
+        const socialPlatforms = ['facebook', 'twitter', 'linkedin', 'instagram', 'tiktok', 'youtube', 'pinterest'];
+        const emailPlatforms = ['gmail', 'outlook', 'mail', 'email'];
+        
+        if (searchEngines.some(engine => referrerInfo.domain.includes(engine))) {
+          referrerInfo.source = 'Search Engine';
+          referrerInfo.isSearchEngine = true;
+        } else if (socialPlatforms.some(platform => referrerInfo.domain.includes(platform))) {
+          referrerInfo.source = 'Social Media';
+          referrerInfo.isSocialMedia = true;
+        } else if (emailPlatforms.some(platform => referrerInfo.domain.includes(platform))) {
+          referrerInfo.source = 'Email';
+          referrerInfo.isEmail = true;
+        } else {
+          referrerInfo.source = 'Website';
         }
-      );
-      console.log('✓ URL data updated successfully');
-    } catch (updateError) {
-      console.warn('⚠ Failed to update analytics (non-critical):', updateError);
-      // Don't fail the redirect for analytics issues
+        
+        // Extract UTM parameters if available
+        const utmSource = referrerUrl.searchParams.get('utm_source');
+        const utmMedium = referrerUrl.searchParams.get('utm_medium');
+        const utmCampaign = referrerUrl.searchParams.get('utm_campaign');
+        
+        if (utmSource) referrerInfo.source = utmSource;
+        if (utmMedium) referrerInfo.medium = utmMedium;
+        if (utmCampaign) referrerInfo.campaign = utmCampaign;
+        
+      } catch (refError) {
+        console.warn('⚠ Referrer parsing failed:', refError);
+      }
     }
     
-    console.log('=== API Route Success ===');
-    console.log('Returning longUrl:', urlData.longUrl);
+    // 5. TIMING AND SESSION DATA
+    const now = new Date();
+    const timeInfo = {
+      timestamp: now,
+      iso: now.toISOString(),
+      unix: Math.floor(now.getTime() / 1000),
+      hour: now.getHours(),
+      dayOfWeek: now.getDay(), // 0 = Sunday
+      dayOfMonth: now.getDate(),
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      timezone: timezone || 'Unknown'
+    };
     
-    return NextResponse.json({ longUrl: urlData.longUrl });
+    // 6. TECHNICAL DATA
+    const technicalInfo = {
+      userAgent: agent.ua || 'Unknown',
+      language: headers.get("accept-language")?.split(',')[0] || 'Unknown',
+      encoding: headers.get("accept-encoding") || 'Unknown',
+      connection: headers.get("connection") || 'Unknown',
+      protocol: url.protocol || 'https:',
+      method: 'GET',
+      screenResolution: headers.get("screen-resolution") || 'Unknown',
+      colorDepth: headers.get("color-depth") || 'Unknown',
+      pixelRatio: headers.get("pixel-ratio") || 'Unknown',
+      viewport: headers.get("viewport") || 'Unknown'
+    };
+    
+    // 7. SECURITY AND PRIVACY
+    const securityInfo = {
+      dnt: headers.get("dnt") === '1', // Do Not Track
+      secFetchDest: headers.get("sec-fetch-dest") || 'Unknown',
+      secFetchMode: headers.get("sec-fetch-mode") || 'Unknown',
+      secFetchSite: headers.get("sec-fetch-site") || 'Unknown',
+      secFetchUser: headers.get("sec-fetch-user") || 'Unknown'
+    };
+    
+    // 8. PERFORMANCE DATA
+    const performanceInfo = {
+      loadTime: headers.get("page-load-time") || null,
+      networkType: headers.get("network-type") || 'Unknown',
+      effectiveType: headers.get("effective-connection-type") || 'Unknown',
+      downlink: headers.get("downlink") || null,
+      rtt: headers.get("rtt") || null
+    };
+    
+    // 9. CONSTRUCT COMPREHENSIVE VISIT DATA FOR SUPABASE
+    const enhancedVisitData = {
+      url_id: urlData.id,
+      timestamp: timeInfo.iso,
+      ip_address: ipAddress !== 'Unknown' ? ipAddress : null,
+      user_agent: agent.ua || 'Unknown',
+      
+      // Store complex data as JSONB
+      location: {
+        country: geo?.country || 'Unknown',
+        region: geo?.region || 'Unknown', 
+        city: geo?.city || 'Unknown',
+        latitude: geo?.ll?.[0] || null,
+        longitude: geo?.ll?.[1] || null,
+        timezone: geo?.timezone || 'Unknown',
+        postalCode: geo?.zip || 'Unknown'
+      },
+      
+      device: deviceInfo,
+      browser: browserInfo,
+      os: osInfo,
+      referrer: referrerInfo,
+      technical: technicalInfo,
+      security: securityInfo,
+      performance: performanceInfo,
+      time_info: timeInfo,
+      
+      session_id: headers.get("session-id") || null,
+      
+      custom_data: {
+        userId: headers.get("user-id") || null,
+        experimentId: headers.get("experiment-id") || null,
+        variant: headers.get("variant") || null,
+        source: headers.get("tracking-source") || null,
+        medium: headers.get("tracking-medium") || null,
+        campaign: headers.get("tracking-campaign") || null,
+        content: headers.get("tracking-content") || null,
+        term: headers.get("tracking-term") || null
+      }
+    };
+    
+    console.log('Enhanced visit data prepared for Supabase');
+    
+    // Update URL data with enhanced analytics using Supabase
+    try {
+      // Insert visit record
+      const { error: visitError } = await supabase
+        .from('visits')
+        .insert(enhancedVisitData);
+      
+      if (visitError) {
+        console.warn('⚠ Failed to insert visit data:', visitError);
+      } else {
+        console.log('✓ Visit data inserted successfully');
+      }
+      
+      // Update URL click count and last accessed
+      const { error: updateError } = await supabase
+        .from('urls')
+        .update({
+          click_count: urlData.click_count + 1,
+          last_accessed: now.toISOString()
+        })
+        .eq('id', urlData.id);
+      
+      if (updateError) {
+        console.warn('⚠ Failed to update URL analytics:', updateError);
+      } else {
+        console.log('✓ URL analytics updated successfully');
+      }
+      
+    } catch (updateError) {
+      console.warn('⚠ Failed to update enhanced analytics (non-critical):', updateError);
+    }
+    
+    console.log('=== Enhanced Analytics API Route Success ===');
+    console.log('Returning longUrl:', urlData.long_url);
+    
+    return NextResponse.json({ longUrl: urlData.long_url });
     
   } catch (error) {
-    console.error('=== API Route Fatal Error ===');
+    console.error('=== Enhanced Analytics API Route Fatal Error ===');
     console.error('Error details:', error);
     console.error('Error stack:', error.stack);
     
-    // Always return JSON, never let it fall through to HTML error page
     return NextResponse.json(
       { 
         error: "Internal server error", 

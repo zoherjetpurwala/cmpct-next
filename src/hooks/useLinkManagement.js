@@ -1,3 +1,6 @@
+// ====================
+// Updated useLinkManagement.js hook for Supabase
+// ====================
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -7,7 +10,6 @@ export const useLinkManagement = () => {
   const [error, setError] = useState(null);
   const { data: session } = useSession(); 
 
-  
   const fetchUserLinks = useCallback(async () => {
     if (!session?.user.id) {
       console.log("User is not logged in or ID is not available.");
@@ -27,10 +29,14 @@ export const useLinkManagement = () => {
         throw new Error("Failed to fetch user links");
       }
 
+      // Updated to match Supabase column names
       const formattedLinks = data.map((link) => ({
-        original: link.longUrl,
-        shortened: `${process.env.NEXT_PUBLIC_DOMAIN}/${link.header ? `${link.header}/` : ""}${link.shortCode}`,
-        clicks: link.clickCount || 0,
+        original: link.long_url, // Updated from longUrl to long_url
+        shortened: `${process.env.NEXT_PUBLIC_DOMAIN}/${link.header ? `${link.header}/` : ""}${link.short_code}`, // Updated from shortCode to short_code
+        clicks: link.click_count || 0, // Updated from clickCount to click_count
+        id: link.id, // Include the UUID for potential future use
+        createdAt: link.created_at, // Include creation timestamp
+        header: link.header // Include header for branded links
       }));
 
       setShortenedLinks(formattedLinks);
@@ -50,5 +56,22 @@ export const useLinkManagement = () => {
     setShortenedLinks(prevLinks => [newLink, ...prevLinks]);
   }, []);
 
-  return { shortenedLinks, isLoading, error, fetchUserLinks, addNewLink };
+  // Additional helper function to refresh a specific link's analytics
+  const refreshLinkAnalytics = useCallback(async (linkId) => {
+    try {
+      // This could be extended to fetch updated analytics for a specific link
+      await fetchUserLinks();
+    } catch (error) {
+      console.error("Error refreshing link analytics:", error);
+    }
+  }, [fetchUserLinks]);
+
+  return { 
+    shortenedLinks, 
+    isLoading, 
+    error, 
+    fetchUserLinks, 
+    addNewLink,
+    refreshLinkAnalytics 
+  };
 };

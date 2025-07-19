@@ -1,8 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { connectToDatabase } from "@/lib/db";
-import userModel from "@/models/user.model";
+import { supabase } from "@/lib/supabase";
 
 export const authOptions = {
   providers: [
@@ -13,10 +12,13 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        await connectToDatabase();
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", credentials.email)
+          .single();
 
-        const user = await userModel.findOne({ email: credentials.email });
-        if (!user) {
+        if (error || !user) {
           throw new Error("Invalid credentials");
         }
 
@@ -24,15 +26,17 @@ export const authOptions = {
           credentials.password,
           user.password
         );
+        
         if (!isMatch) {
           throw new Error("Invalid credentials");
         }
+
         return {
-          id: user._id,
+          id: user.id,
           email: user.email,
           name: user.name,
-          accessToken: user.accessToken,
-          currentTier: user.currentTier,
+          accessToken: user.access_token,
+          currentTier: user.current_tier,
         };
       },
     }),

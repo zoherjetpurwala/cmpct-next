@@ -1,5 +1,4 @@
-import { connectToDatabase } from '@/lib/db';
-import userModel from '@/models/user.model';
+import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
@@ -26,10 +25,13 @@ export async function GET(req) {
       return NextResponse.json({ message: 'User ID not found in token' }, { status: 400 });
     }
 
-    await connectToDatabase();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, name, phone, access_token, current_tier, api_calls_today, api_call_reset_time, link_count, links_this_month, link_limit_reset_date, current_tier_id, created_at')
+      .eq('id', userId)
+      .single();
 
-    const user = await userModel.findById(userId).select('-password');
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 

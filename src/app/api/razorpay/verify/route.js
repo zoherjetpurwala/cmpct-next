@@ -1,8 +1,6 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import userModel from "@/models/user.model";
-import purchaseModel from "@/models/purchase.model";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req) {
   const {
@@ -28,18 +26,43 @@ export async function POST(req) {
 
     const expirationDate = calculateExpirationDate(plan);
 
-    await userModel.findByIdAndUpdate(userId, {
-      currentTier: plan,
-      currentTierId: new mongoose.Types.ObjectId(),
-    });
+    // Update user tier
+    const { error: userUpdateError } = await supabase
+      .from("users")
+      .update({
+        current_tier: plan
+      })
+      .eq("id", userId);
 
-    const newPurchase = new purchaseModel({
-      userId,
-      tier: plan,
-      expirationDate,
-    });
+    if (userUpdateError) {
+      throw new Error(userUpdateError.message);
+    }
 
-    await newPurchase.save();
+    // Create new purchase record
+    const { data: newPurchase, error: purchaseError } = await supabase
+      .from("purchases")
+      .insert({
+        user_id: userId,
+        tier: plan,
+        purchase_date: new Date().toISOString(),
+        expiration_date: expirationDate.toISOString()
+      })
+      .select()
+      .single();
+
+    if (purchaseError) {
+      throw new Error(purchaseError.message);
+    }
+
+    // Update user's current tier ID
+    const { error: tierUpdateError } = await supabase
+      .from("users")
+      .update({ current_tier_id: newPurchase.id })
+      .eq("id", userId);
+
+    if (tierUpdateError) {
+      throw new Error(tierUpdateError.message);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

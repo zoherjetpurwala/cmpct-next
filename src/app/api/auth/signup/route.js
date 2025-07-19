@@ -1,13 +1,9 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import userModel from "@/models/user.model";
-import purchaseModel from "@/models/purchase.model";
-import { connectToDatabase } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req) {
-  await connectToDatabase();
-
   try {
     const { email, password, name, phone } = await req.json();
 
@@ -33,7 +29,13 @@ export async function POST(req) {
       );
     }
 
-    const existingUser = await userModel.findOne({ email });
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .single();
+
     if (existingUser) {
       return NextResponse.json(
         { error: "This email is already registered" },
@@ -43,35 +45,66 @@ export async function POST(req) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-     // Generate a unique access token
-     let accessToken;
-     let isUnique = false;
- 
-     while (!isUnique) {
-       accessToken = crypto.randomBytes(16).toString("hex");
-       const existingToken = await userModel.findOne({ accessToken });
-       isUnique = !existingToken;
-     }
+    // Generate a unique access token
+    let accessToken;
+    let isUnique = false;
 
-    const newUser = await userModel.create({
-      email,
-      password: hashedPassword,
-      name,
-      phone,
-      accessToken,
-      linkCount: 0,
-      apiCallsToday: 0,
-    });
+    while (!isUnique) {
+      accessToken = crypto.randomBytes(16).toString("hex");
+      const { data: existingToken } = await supabase
+        .from("users")
+        .select("id")
+        .eq("access_token", accessToken)
+        .single();
+      isUnique = !existingToken;
+    }
 
-    const purchase = await purchaseModel.create({
-      userId: newUser._id,
-      tier: "free",
-      purchaseDate: Date.now(),
-      expirationDate: null,
-    });
+    // Create user
+    const { data: newUser, error: userError } = await supabase
+      .from("users")
+      .insert({
+        email,
+        password: hashedPassword,
+        name,
+        phone,
+        access_token: accessToken,
+        current_tier: "free",
+        api_calls_today: 0,
+        link_count: 0,
+        links_this_month: 0
+      })
+      .select()
+      .single();
 
-    newUser.currentTierId = purchase._id;
-    await newUser.save();
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    // Create free tier purchase
+    const { data: purchase, error: purchaseError } = await supabase
+      .from("purchases")
+      .insert({
+        user_id: newUser.id,
+        tier: "free",
+        purchase_date: new Date().toISOString(),
+        expiration_date: null
+      })
+      .select()
+      .single();
+
+    if (purchaseError) {
+      throw new Error(purchaseError.message);
+    }
+
+    // Update user with purchase reference
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ current_tier_id: purchase.id })
+      .eq("id", newUser.id);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
 
     return NextResponse.json(
       { message: "User created successfully" },
