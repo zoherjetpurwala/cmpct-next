@@ -28,7 +28,7 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
 } from "recharts";
 import {
   BarChart2,
@@ -57,7 +57,7 @@ import {
   Activity,
   Network,
   Timer,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import LoadingSpinner from "./ui/loading-spinner";
@@ -80,13 +80,13 @@ const AnalyticsComponent = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch user's URLs and their analytics
       const urlsResponse = await fetch("/api/v1/user-links", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.user?.accessToken}`
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
         body: JSON.stringify({ userId: session?.user.id }),
       });
@@ -96,18 +96,21 @@ const AnalyticsComponent = () => {
       }
 
       const urls = await urlsResponse.json();
-      
+
       // Fetch detailed analytics for each URL
-      const analyticsPromises = urls.map(url => 
+      const analyticsPromises = urls.map((url) =>
         fetchUrlAnalytics(url.id, url.short_code, url.header)
       );
-      
+
       const urlAnalytics = await Promise.all(analyticsPromises);
-      
+
       // Process and combine all analytics data
-      const processedData = processRealAnalyticsData(urls, urlAnalytics, timeRange);
+      const processedData = processRealAnalyticsData(
+        urls,
+        urlAnalytics,
+        timeRange
+      );
       setAnalyticsData(processedData);
-      
     } catch (error) {
       console.error("Error fetching analytics:", error);
       setError(error.message);
@@ -121,15 +124,15 @@ const AnalyticsComponent = () => {
       // Fetch visits data from Supabase
       const response = await fetch("/api/v1/analytics/visits", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.user?.accessToken}`
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           urlId,
           timeRange,
           shortCode,
-          header
+          header,
         }),
       });
 
@@ -145,13 +148,18 @@ const AnalyticsComponent = () => {
 
   const processRealAnalyticsData = (urls, urlAnalytics, timeRange) => {
     // Combine all visits from all URLs
-    const allVisits = urlAnalytics.flatMap(analytics => analytics.visits || []);
-    const totalClicks = urlAnalytics.reduce((sum, analytics) => 
-      sum + (analytics.urlData?.click_count || 0), 0
+    const allVisits = urlAnalytics.flatMap(
+      (analytics) => analytics.visits || []
+    );
+    const totalClicks = urlAnalytics.reduce(
+      (sum, analytics) => sum + (analytics.urlData?.click_count || 0),
+      0
     );
 
     // Get unique visitors based on IP addresses
-    const uniqueIPs = new Set(allVisits.map(visit => visit.ip_address).filter(Boolean));
+    const uniqueIPs = new Set(
+      allVisits.map((visit) => visit.ip_address).filter(Boolean)
+    );
     const uniqueVisitors = uniqueIPs.size;
 
     // Calculate date range for average
@@ -160,37 +168,37 @@ const AnalyticsComponent = () => {
 
     // Process daily clicks
     const dailyClicks = processDailyClicks(allVisits, days);
-    
+
     // Process device data
     const deviceData = processDeviceData(allVisits);
-    
+
     // Process location data
     const locationData = processLocationData(allVisits);
-    
+
     // Process browser data
     const browserData = processBrowserData(allVisits);
-    
+
     // Process hourly data
     const hourlyData = processHourlyData(allVisits);
-    
+
     // Process referrer data
     const referrerData = processReferrerData(allVisits);
-    
+
     // Process OS data
     const osData = processOSData(allVisits);
-    
+
     // Process network data
     const networkData = processNetworkData(allVisits);
-    
+
     // Process performance data
     const performanceData = processPerformanceData(allVisits);
-    
+
     // Process security data
     const securityData = processSecurityData(allVisits);
-    
+
     // Process time analytics
     const timeAnalytics = processTimeAnalytics(allVisits);
-    
+
     // Process technical capabilities
     const technicalData = processTechnicalData(allVisits);
 
@@ -219,7 +227,7 @@ const AnalyticsComponent = () => {
       timeAnalytics,
       technicalData,
       totalUrls: urls.length,
-      dataLastUpdated: new Date().toISOString()
+      dataLastUpdated: new Date().toISOString(),
     };
   };
 
@@ -227,23 +235,23 @@ const AnalyticsComponent = () => {
   const processDailyClicks = (visits, days) => {
     const dailyStats = {};
     const today = new Date();
-    
+
     // Initialize with last N days
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = date.toISOString().split("T")[0];
       dailyStats[dateKey] = {
-        name: date.toLocaleDateString('en', { weekday: 'short' }),
+        name: date.toLocaleDateString("en", { weekday: "short" }),
         date: dateKey,
         clicks: 0,
-        uniqueVisitors: new Set()
+        uniqueVisitors: new Set(),
       };
     }
 
     // Count actual visits
-    visits.forEach(visit => {
-      const visitDate = new Date(visit.timestamp).toISOString().split('T')[0];
+    visits.forEach((visit) => {
+      const visitDate = new Date(visit.timestamp).toISOString().split("T")[0];
       if (dailyStats[visitDate]) {
         dailyStats[visitDate].clicks++;
         if (visit.ip_address) {
@@ -252,19 +260,19 @@ const AnalyticsComponent = () => {
       }
     });
 
-    return Object.values(dailyStats).map(day => ({
+    return Object.values(dailyStats).map((day) => ({
       ...day,
-      uniqueVisitors: day.uniqueVisitors.size
+      uniqueVisitors: day.uniqueVisitors.size,
     }));
   };
 
   const processDeviceData = (visits) => {
     const deviceStats = { Desktop: 0, Mobile: 0, Tablet: 0 };
-    
-    visits.forEach(visit => {
-      const device = visit.device?.type || 'desktop';
+
+    visits.forEach((visit) => {
+      const device = visit.device?.type || "desktop";
       const deviceName = device.charAt(0).toUpperCase() + device.slice(1);
-      
+
       if (deviceStats[deviceName] !== undefined) {
         deviceStats[deviceName]++;
       } else {
@@ -274,14 +282,14 @@ const AnalyticsComponent = () => {
 
     return Object.entries(deviceStats)
       .map(([name, value]) => ({ name, value }))
-      .filter(item => item.value > 0);
+      .filter((item) => item.value > 0);
   };
 
   const processLocationData = (visits) => {
     const locationStats = {};
-    
-    visits.forEach(visit => {
-      const city = visit.location?.city || 'Unknown';
+
+    visits.forEach((visit) => {
+      const city = visit.location?.city || "Unknown";
       locationStats[city] = (locationStats[city] || 0) + 1;
     });
 
@@ -293,9 +301,9 @@ const AnalyticsComponent = () => {
 
   const processBrowserData = (visits) => {
     const browserStats = {};
-    
-    visits.forEach(visit => {
-      const browser = visit.browser?.name || 'Unknown';
+
+    visits.forEach((visit) => {
+      const browser = visit.browser?.name || "Unknown";
       browserStats[browser] = (browserStats[browser] || 0) + 1;
     });
 
@@ -307,11 +315,11 @@ const AnalyticsComponent = () => {
 
   const processHourlyData = (visits) => {
     const hourlyStats = Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i.toString().padStart(2, '0')}:00`,
-      clicks: 0
+      hour: `${i.toString().padStart(2, "0")}:00`,
+      clicks: 0,
     }));
 
-    visits.forEach(visit => {
+    visits.forEach((visit) => {
       const hour = new Date(visit.timestamp).getHours();
       hourlyStats[hour].clicks++;
     });
@@ -321,9 +329,10 @@ const AnalyticsComponent = () => {
 
   const processReferrerData = (visits) => {
     const referrerStats = {};
-    
-    visits.forEach(visit => {
-      const referrer = visit.referrer?.source || visit.referrer?.domain || 'Direct';
+
+    visits.forEach((visit) => {
+      const referrer =
+        visit.referrer?.source || visit.referrer?.domain || "Direct";
       referrerStats[referrer] = (referrerStats[referrer] || 0) + 1;
     });
 
@@ -335,9 +344,9 @@ const AnalyticsComponent = () => {
 
   const processOSData = (visits) => {
     const osStats = {};
-    
-    visits.forEach(visit => {
-      const os = visit.os?.platform || visit.os?.name || 'Unknown';
+
+    visits.forEach((visit) => {
+      const os = visit.os?.platform || visit.os?.name || "Unknown";
       osStats[os] = (osStats[os] || 0) + 1;
     });
 
@@ -349,11 +358,12 @@ const AnalyticsComponent = () => {
 
   const processNetworkData = (visits) => {
     const networkStats = {};
-    
-    visits.forEach(visit => {
-      const networkType = visit.performance?.effectiveType || 
-                         visit.technical?.effectiveType || 
-                         'Unknown';
+
+    visits.forEach((visit) => {
+      const networkType =
+        visit.performance?.effectiveType ||
+        visit.technical?.effectiveType ||
+        "Unknown";
       networkStats[networkType] = (networkStats[networkType] || 0) + 1;
     });
 
@@ -364,41 +374,45 @@ const AnalyticsComponent = () => {
 
   const processPerformanceData = (visits) => {
     return visits
-      .filter(visit => {
-        const loadTime = parseInt(visit.performance?.loadTime || visit.technical?.pageLoadTime);
+      .filter((visit) => {
+        const loadTime = parseInt(
+          visit.performance?.loadTime || visit.technical?.pageLoadTime
+        );
         return loadTime && loadTime > 0 && loadTime < 10000;
       })
       .slice(-10) // Last 10 visits with valid load times
       .map((visit, index) => ({
         name: `Visit ${index + 1}`,
-        loadTime: parseInt(visit.performance?.loadTime || visit.technical?.pageLoadTime),
-        date: new Date(visit.timestamp).toLocaleDateString()
+        loadTime: parseInt(
+          visit.performance?.loadTime || visit.technical?.pageLoadTime
+        ),
+        date: new Date(visit.timestamp).toLocaleDateString(),
       }));
   };
 
   const processSecurityData = (visits) => {
     let httpsCount = 0;
     let dntCount = 0;
-    
-    visits.forEach(visit => {
-      if (visit.technical?.protocol === 'https:') httpsCount++;
+
+    visits.forEach((visit) => {
+      if (visit.technical?.protocol === "https:") httpsCount++;
       if (visit.security?.dnt || visit.technical?.doNotTrack) dntCount++;
     });
 
     const total = visits.length || 1;
-    
+
     return {
       httpsUsage: Math.round((httpsCount / total) * 100),
       dntEnabled: Math.round((dntCount / total) * 100),
       adBlockerUsage: Math.round(Math.random() * 30), // This would need real detection
-      secureConnections: httpsCount
+      secureConnections: httpsCount,
     };
   };
 
   const processTimeAnalytics = (visits) => {
     const timeStats = { morning: 0, afternoon: 0, evening: 0, night: 0 };
 
-    visits.forEach(visit => {
+    visits.forEach((visit) => {
       const hour = new Date(visit.timestamp).getHours();
       if (hour >= 6 && hour < 12) timeStats.morning++;
       else if (hour >= 12 && hour < 18) timeStats.afternoon++;
@@ -407,11 +421,11 @@ const AnalyticsComponent = () => {
     });
 
     const total = visits.length || 1;
-    
+
     return Object.entries(timeStats).map(([period, count]) => ({
       period: period.charAt(0).toUpperCase() + period.slice(1),
       visits: count,
-      percentage: Math.round((count / total) * 100)
+      percentage: Math.round((count / total) * 100),
     }));
   };
 
@@ -421,41 +435,51 @@ const AnalyticsComponent = () => {
       webGLSupport: 0,
       serviceWorkerSupport: 0,
       pushNotificationSupport: 0,
-      geolocationSupport: 0
+      geolocationSupport: 0,
     };
 
-    visits.forEach(visit => {
-      if (visit.technical?.touchSupport === 'true') capabilities.touchSupport++;
-      if (visit.technical?.webGLSupported === 'true') capabilities.webGLSupport++;
-      if (visit.technical?.serviceWorkerSupported === 'true') capabilities.serviceWorkerSupport++;
-      if (visit.technical?.pushNotificationSupported === 'true') capabilities.pushNotificationSupport++;
-      if (visit.technical?.geolocationSupported === 'true') capabilities.geolocationSupport++;
+    visits.forEach((visit) => {
+      if (visit.technical?.touchSupport === "true") capabilities.touchSupport++;
+      if (visit.technical?.webGLSupported === "true")
+        capabilities.webGLSupport++;
+      if (visit.technical?.serviceWorkerSupported === "true")
+        capabilities.serviceWorkerSupport++;
+      if (visit.technical?.pushNotificationSupported === "true")
+        capabilities.pushNotificationSupport++;
+      if (visit.technical?.geolocationSupported === "true")
+        capabilities.geolocationSupport++;
     });
 
     const total = visits.length || 1;
-    
+
     return Object.entries(capabilities).map(([feature, count]) => ({
-      feature: feature.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+      feature: feature
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (str) => str.toUpperCase()),
       supported: count,
-      percentage: Math.round((count / total) * 100)
+      percentage: Math.round((count / total) * 100),
     }));
   };
 
   const calculateAvgLoadTime = (visits) => {
     const loadTimes = visits
-      .map(visit => parseInt(visit.performance?.loadTime || visit.technical?.pageLoadTime))
-      .filter(time => time && time > 0 && time < 10000);
-    
-    return loadTimes.length > 0 
-      ? Math.round(loadTimes.reduce((sum, time) => sum + time, 0) / loadTimes.length)
+      .map((visit) =>
+        parseInt(visit.performance?.loadTime || visit.technical?.pageLoadTime)
+      )
+      .filter((time) => time && time > 0 && time < 10000);
+
+    return loadTimes.length > 0
+      ? Math.round(
+          loadTimes.reduce((sum, time) => sum + time, 0) / loadTimes.length
+        )
       : 0;
   };
 
   const calculateBounceRate = (visits) => {
     // Group visits by session or IP within short time windows
     const sessions = {};
-    visits.forEach(visit => {
-      const sessionKey = visit.session_id || visit.ip_address || 'unknown';
+    visits.forEach((visit) => {
+      const sessionKey = visit.session_id || visit.ip_address || "unknown";
       if (!sessions[sessionKey]) {
         sessions[sessionKey] = [];
       }
@@ -463,9 +487,11 @@ const AnalyticsComponent = () => {
     });
 
     const sessionCounts = Object.values(sessions);
-    const singlePageSessions = sessionCounts.filter(session => session.length === 1).length;
-    
-    return sessionCounts.length > 0 
+    const singlePageSessions = sessionCounts.filter(
+      (session) => session.length === 1
+    ).length;
+
+    return sessionCounts.length > 0
       ? Math.round((singlePageSessions / sessionCounts.length) * 100)
       : 0;
   };
@@ -473,13 +499,33 @@ const AnalyticsComponent = () => {
   const calculateClickThroughRate = (visits, totalClicks) => {
     // This would typically be clicks/impressions, but we only have clicks
     // So we'll calculate it as successful redirects vs total attempts
-    const successfulVisits = visits.filter(visit => visit.timestamp).length;
-    return totalClicks > 0 ? Math.round((successfulVisits / totalClicks) * 100) : 0;
+    const successfulVisits = visits.filter((visit) => visit.timestamp).length;
+    return totalClicks > 0
+      ? Math.round((successfulVisits / totalClicks) * 100)
+      : 0;
   };
 
-  const COLORS = ["#eb6753", "#f18a76", "#f7bbae", "#fbdcd5", "#fdf0ed", "#4ade80", "#3b82f6", "#f59e0b", "#ef4444"];
+  const COLORS = [
+    "#eb6753",
+    "#f18a76",
+    "#f7bbae",
+    "#fbdcd5",
+    "#fdf0ed",
+    "#4ade80",
+    "#3b82f6",
+    "#f59e0b",
+    "#ef4444",
+  ];
 
-  const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, format = "number" }) => (
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    trend,
+    trendValue,
+    subtitle,
+    format = "number",
+  }) => (
     <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
       <Card className="rounded-2xl border border-themeColor/20 bg-gradient-to-br from-white to-themeColor-light/10 hover:shadow-lg hover:shadow-themeColor/10 transition-all duration-300">
         <CardContent className="p-6">
@@ -487,11 +533,17 @@ const AnalyticsComponent = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">{title}</p>
               <p className="text-2xl font-bold text-themeColor-text">
-                {format === "percentage" ? `${value}%` : 
-                 format === "time" ? `${value}ms` :
-                 typeof value === 'number' ? value.toLocaleString() : value}
+                {format === "percentage"
+                  ? `${value}%`
+                  : format === "time"
+                  ? `${value}ms`
+                  : typeof value === "number"
+                  ? value.toLocaleString()
+                  : value}
               </p>
-              {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+              {subtitle && (
+                <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+              )}
               {trend && (
                 <div className="flex items-center text-xs text-green-600 mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
@@ -511,7 +563,9 @@ const AnalyticsComponent = () => {
   const EmptyState = ({ message }) => (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
-      <h3 className="text-lg font-medium text-gray-600 mb-2">No Data Available</h3>
+      <h3 className="text-lg font-medium text-gray-600 mb-2">
+        No Data Available
+      </h3>
       <p className="text-gray-500 max-w-sm">{message}</p>
     </div>
   );
@@ -520,19 +574,26 @@ const AnalyticsComponent = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner variant="dashboard" message="Loading real analytics data..." />
+        <LoadingSpinner
+          variant="dashboard"
+          message="Loading real analytics data..."
+        />
       </div>
     );
   }
@@ -541,9 +602,11 @@ const AnalyticsComponent = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-600 mb-2">Error Loading Analytics</h3>
+        <h3 className="text-lg font-medium text-gray-600 mb-2">
+          Error Loading Analytics
+        </h3>
         <p className="text-gray-500 mb-4">{error}</p>
-        <button 
+        <button
           onClick={fetchAnalytics}
           className="px-4 py-2 bg-themeColor text-white rounded-lg hover:bg-themeColor/90 transition-colors"
         >
@@ -558,8 +621,12 @@ const AnalyticsComponent = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-themeColor-text">Analytics Dashboard</h1>
-            <p className="text-gray-600 mt-1">No analytics data available yet</p>
+            <h1 className="text-3xl font-bold text-themeColor-text">
+              Analytics Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">
+              No analytics data available yet
+            </p>
           </div>
         </div>
         <EmptyState message="Start sharing your shortened links to see detailed analytics and insights here." />
@@ -575,15 +642,20 @@ const AnalyticsComponent = () => {
       className="space-y-8"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-themeColor-text">Analytics Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Real-time insights from {analyticsData.totalUrls} URLs
-            {analyticsData.dataLastUpdated && 
-              ` • Last updated ${new Date(analyticsData.dataLastUpdated).toLocaleTimeString()}`
-            }
-          </p>
+      <Card className="flex  p-6 justify-between rounded-2xl border border-themeColor/20 bg-gradient-to-br from-white to-themeColor-light/10 hover:shadow-lg hover:shadow-themeColor/10 transition-all duration-300">
+        <div className="flex gap-2 items-center">
+          <h1 className="text-xl font-bold text-themeColor-text">
+            Real-time insights
+          </h1>
+          {analyticsData.dataLastUpdated && (
+            <Badge
+              variant="outline"
+              className="text-xs text-gray-500 border-gray-300"
+            >
+              Last updated{" "}
+              {new Date(analyticsData.dataLastUpdated).toLocaleTimeString()}
+            </Badge>
+          )}
         </div>
         <div className="flex gap-2">
           {["7d", "30d", "90d"].map((range) => (
@@ -596,21 +668,39 @@ const AnalyticsComponent = () => {
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              {range === "7d" ? "7 Days" : range === "30d" ? "30 Days" : "90 Days"}
+              {range === "7d"
+                ? "7 Days"
+                : range === "30d"
+                ? "30 Days"
+                : "90 Days"}
             </button>
           ))}
         </div>
-      </motion.div>
+      </Card>
 
       {/* Tabs */}
       <motion.div variants={itemVariants}>
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+        <Tabs
+          value={selectedTab}
+          onValueChange={setSelectedTab}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-5 rounded-2xl bg-gray-100 p-1">
-            <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
-            <TabsTrigger value="audience" className="rounded-xl">Audience</TabsTrigger>
-            <TabsTrigger value="technology" className="rounded-xl">Technology</TabsTrigger>
-            <TabsTrigger value="performance" className="rounded-xl">Performance</TabsTrigger>
-            <TabsTrigger value="security" className="rounded-xl">Security</TabsTrigger>
+            <TabsTrigger value="overview" className="rounded-xl">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="audience" className="rounded-xl">
+              Audience
+            </TabsTrigger>
+            <TabsTrigger value="technology" className="rounded-xl">
+              Technology
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="rounded-xl">
+              Performance
+            </TabsTrigger>
+            <TabsTrigger value="security" className="rounded-xl">
+              Security
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8 mt-8">
@@ -649,8 +739,12 @@ const AnalyticsComponent = () => {
                       <BarChart2 className="h-5 w-5 text-themeColor" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-themeColor-text">Click Analytics</CardTitle>
-                      <CardDescription>Daily click performance and unique visitors</CardDescription>
+                      <CardTitle className="text-xl text-themeColor-text">
+                        Click Analytics
+                      </CardTitle>
+                      <CardDescription>
+                        Daily click performance and unique visitors
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -659,24 +753,52 @@ const AnalyticsComponent = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={analyticsData.dailyClicks}>
                         <defs>
-                          <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#eb6753" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#eb6753" stopOpacity={0}/>
+                          <linearGradient
+                            id="colorClicks"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#eb6753"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#eb6753"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
-                          <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                          <linearGradient
+                            id="colorVisitors"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis dataKey="name" stroke="#666" />
                         <YAxis stroke="#666" />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #eb6753',
-                            borderRadius: '12px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            backgroundColor: "white",
+                            border: "1px solid #eb6753",
+                            borderRadius: "12px",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                           }}
                         />
                         <Area
@@ -709,7 +831,7 @@ const AnalyticsComponent = () => {
             )}
 
             {/* Hourly Activity */}
-            {analyticsData.hourlyData?.some(h => h.clicks > 0) ? (
+            {analyticsData.hourlyData?.some((h) => h.clicks > 0) ? (
               <Card className="rounded-2xl border border-themeColor/20 bg-gradient-to-br from-white to-themeColor-light/5 shadow-lg">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -717,8 +839,12 @@ const AnalyticsComponent = () => {
                       <Clock className="h-5 w-5 text-themeColor" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-themeColor-text">Hourly Activity</CardTitle>
-                      <CardDescription>Click patterns throughout the day</CardDescription>
+                      <CardTitle className="text-xl text-themeColor-text">
+                        Hourly Activity
+                      </CardTitle>
+                      <CardDescription>
+                        Click patterns throughout the day
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -730,7 +856,11 @@ const AnalyticsComponent = () => {
                         <XAxis dataKey="hour" stroke="#666" />
                         <YAxis stroke="#666" />
                         <Tooltip />
-                        <Bar dataKey="clicks" fill="#eb6753" radius={[4, 4, 0, 0]} />
+                        <Bar
+                          dataKey="clicks"
+                          fill="#eb6753"
+                          radius={[4, 4, 0, 0]}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -760,29 +890,49 @@ const AnalyticsComponent = () => {
                         <MapPin className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Top Locations</CardTitle>
-                        <CardDescription>Clicks by geographic location</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Top Locations
+                        </CardTitle>
+                        <CardDescription>
+                          Clicks by geographic location
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {analyticsData.locationData.map((location, index) => (
-                        <div key={location.name} className="flex items-center justify-between">
+                        <div
+                          key={location.name}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <div 
-                              className="w-4 h-4 rounded-full" 
-                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{
+                                backgroundColor: COLORS[index % COLORS.length],
+                              }}
                             />
-                            <span className="font-medium text-gray-700">{location.name}</span>
+                            <span className="font-medium text-gray-700">
+                              {location.name}
+                            </span>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full" 
-                                style={{ 
-                                  width: `${(location.value / Math.max(...analyticsData.locationData.map(l => l.value))) * 100}%`,
-                                  backgroundColor: COLORS[index % COLORS.length]
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    (location.value /
+                                      Math.max(
+                                        ...analyticsData.locationData.map(
+                                          (l) => l.value
+                                        )
+                                      )) *
+                                    100
+                                  }%`,
+                                  backgroundColor:
+                                    COLORS[index % COLORS.length],
                                 }}
                               />
                             </div>
@@ -815,8 +965,12 @@ const AnalyticsComponent = () => {
                         <Monitor className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Device Types</CardTitle>
-                        <CardDescription>Device distribution among visitors</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Device Types
+                        </CardTitle>
+                        <CardDescription>
+                          Device distribution among visitors
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -834,7 +988,10 @@ const AnalyticsComponent = () => {
                             fill="#8884d8"
                           >
                             {analyticsData.deviceData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
                             ))}
                           </Pie>
                           <Tooltip />
@@ -864,8 +1021,12 @@ const AnalyticsComponent = () => {
                       <Activity className="h-5 w-5 text-themeColor" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-themeColor-text">Time-based Activity</CardTitle>
-                      <CardDescription>Visit patterns by time of day</CardDescription>
+                      <CardTitle className="text-xl text-themeColor-text">
+                        Time-based Activity
+                      </CardTitle>
+                      <CardDescription>
+                        Visit patterns by time of day
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -878,12 +1039,17 @@ const AnalyticsComponent = () => {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ period, percentage }) => `${period} ${percentage}%`}
+                          label={({ period, percentage }) =>
+                            `${period} ${percentage}%`
+                          }
                           outerRadius={100}
                           fill="#8884d8"
                         >
                           {analyticsData.timeAnalytics.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -912,29 +1078,48 @@ const AnalyticsComponent = () => {
                       <Eye className="h-5 w-5 text-themeColor" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-themeColor-text">Traffic Sources</CardTitle>
-                      <CardDescription>Where your visitors come from</CardDescription>
+                      <CardTitle className="text-xl text-themeColor-text">
+                        Traffic Sources
+                      </CardTitle>
+                      <CardDescription>
+                        Where your visitors come from
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {analyticsData.referrerData.map((referrer, index) => (
-                      <div key={referrer.name} className="flex items-center justify-between">
+                      <div
+                        key={referrer.name}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
-                          <div 
-                            className="w-4 h-4 rounded-full" 
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{
+                              backgroundColor: COLORS[index % COLORS.length],
+                            }}
                           />
-                          <span className="font-medium text-gray-700">{referrer.name}</span>
+                          <span className="font-medium text-gray-700">
+                            {referrer.name}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="h-2 rounded-full" 
-                              style={{ 
-                                width: `${(referrer.value / Math.max(...analyticsData.referrerData.map(r => r.value))) * 100}%`,
-                                backgroundColor: COLORS[index % COLORS.length]
+                            <div
+                              className="h-2 rounded-full"
+                              style={{
+                                width: `${
+                                  (referrer.value /
+                                    Math.max(
+                                      ...analyticsData.referrerData.map(
+                                        (r) => r.value
+                                      )
+                                    )) *
+                                  100
+                                }%`,
+                                backgroundColor: COLORS[index % COLORS.length],
                               }}
                             />
                           </div>
@@ -970,29 +1155,49 @@ const AnalyticsComponent = () => {
                         <Globe className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Browser Usage</CardTitle>
-                        <CardDescription>Popular browsers among visitors</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Browser Usage
+                        </CardTitle>
+                        <CardDescription>
+                          Popular browsers among visitors
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {analyticsData.browserData.map((browser, index) => (
-                        <div key={browser.name} className="flex items-center justify-between">
+                        <div
+                          key={browser.name}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <div 
-                              className="w-4 h-4 rounded-full" 
-                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{
+                                backgroundColor: COLORS[index % COLORS.length],
+                              }}
                             />
-                            <span className="font-medium text-gray-700">{browser.name}</span>
+                            <span className="font-medium text-gray-700">
+                              {browser.name}
+                            </span>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full" 
-                                style={{ 
-                                  width: `${(browser.value / Math.max(...analyticsData.browserData.map(b => b.value))) * 100}%`,
-                                  backgroundColor: COLORS[index % COLORS.length]
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    (browser.value /
+                                      Math.max(
+                                        ...analyticsData.browserData.map(
+                                          (b) => b.value
+                                        )
+                                      )) *
+                                    100
+                                  }%`,
+                                  backgroundColor:
+                                    COLORS[index % COLORS.length],
                                 }}
                               />
                             </div>
@@ -1024,8 +1229,12 @@ const AnalyticsComponent = () => {
                         <Monitor className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Operating Systems</CardTitle>
-                        <CardDescription>OS distribution among users</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Operating Systems
+                        </CardTitle>
+                        <CardDescription>
+                          OS distribution among users
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -1043,7 +1252,10 @@ const AnalyticsComponent = () => {
                             fill="#8884d8"
                           >
                             {analyticsData.osData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
                             ))}
                           </Pie>
                           <Tooltip />
@@ -1074,8 +1286,12 @@ const AnalyticsComponent = () => {
                         <Wifi className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Network Types</CardTitle>
-                        <CardDescription>Connection types used by visitors</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Network Types
+                        </CardTitle>
+                        <CardDescription>
+                          Connection types used by visitors
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -1083,11 +1299,18 @@ const AnalyticsComponent = () => {
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={analyticsData.networkData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f0f0f0"
+                          />
                           <XAxis dataKey="name" stroke="#666" />
                           <YAxis stroke="#666" />
                           <Tooltip />
-                          <Bar dataKey="value" fill="#eb6753" radius={[4, 4, 0, 0]} />
+                          <Bar
+                            dataKey="value"
+                            fill="#eb6753"
+                            radius={[4, 4, 0, 0]}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1112,31 +1335,41 @@ const AnalyticsComponent = () => {
                         <Cpu className="h-5 w-5 text-themeColor" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-themeColor-text">Technical Capabilities</CardTitle>
-                        <CardDescription>Browser feature support</CardDescription>
+                        <CardTitle className="text-xl text-themeColor-text">
+                          Technical Capabilities
+                        </CardTitle>
+                        <CardDescription>
+                          Browser feature support
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {analyticsData.technicalData.map((tech, index) => (
-                        <div key={tech.feature} className="flex items-center justify-between">
+                        <div
+                          key={tech.feature}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               className="text-xs"
-                              style={{ borderColor: COLORS[index % COLORS.length] }}
+                              style={{
+                                borderColor: COLORS[index % COLORS.length],
+                              }}
                             >
                               {tech.feature}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full" 
-                                style={{ 
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
                                   width: `${tech.percentage}%`,
-                                  backgroundColor: COLORS[index % COLORS.length]
+                                  backgroundColor:
+                                    COLORS[index % COLORS.length],
                                 }}
                               />
                             </div>
@@ -1195,8 +1428,12 @@ const AnalyticsComponent = () => {
                       <Zap className="h-5 w-5 text-themeColor" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-themeColor-text">Page Load Performance</CardTitle>
-                      <CardDescription>Load time trends for recent visits</CardDescription>
+                      <CardTitle className="text-xl text-themeColor-text">
+                        Page Load Performance
+                      </CardTitle>
+                      <CardDescription>
+                        Load time trends for recent visits
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -1206,21 +1443,28 @@ const AnalyticsComponent = () => {
                       <LineChart data={analyticsData.performanceData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis dataKey="name" stroke="#666" />
-                        <YAxis stroke="#666" label={{ value: 'Load Time (ms)', angle: -90, position: 'insideLeft' }} />
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #eb6753',
-                            borderRadius: '12px'
+                        <YAxis
+                          stroke="#666"
+                          label={{
+                            value: "Load Time (ms)",
+                            angle: -90,
+                            position: "insideLeft",
                           }}
-                          formatter={(value) => [`${value}ms`, 'Load Time']}
                         />
-                        <Line 
-                          type="monotone" 
-                          dataKey="loadTime" 
-                          stroke="#eb6753" 
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "white",
+                            border: "1px solid #eb6753",
+                            borderRadius: "12px",
+                          }}
+                          formatter={(value) => [`${value}ms`, "Load Time"]}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="loadTime"
+                          stroke="#eb6753"
                           strokeWidth={3}
-                          dot={{ fill: '#eb6753', strokeWidth: 2, r: 4 }}
+                          dot={{ fill: "#eb6753", strokeWidth: 2, r: 4 }}
                           activeDot={{ r: 6 }}
                         />
                       </LineChart>
@@ -1279,8 +1523,12 @@ const AnalyticsComponent = () => {
                     <Shield className="h-5 w-5 text-themeColor" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl text-themeColor-text">Security & Privacy Overview</CardTitle>
-                    <CardDescription>Security metrics and privacy preferences</CardDescription>
+                    <CardTitle className="text-xl text-themeColor-text">
+                      Security & Privacy Overview
+                    </CardTitle>
+                    <CardDescription>
+                      Security metrics and privacy preferences
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -1289,53 +1537,86 @@ const AnalyticsComponent = () => {
                   <div className="space-y-6">
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">HTTPS Usage</span>
-                        <span className="text-sm font-bold text-green-600">{analyticsData.securityData?.httpsUsage || 0}%</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          HTTPS Usage
+                        </span>
+                        <span className="text-sm font-bold text-green-600">
+                          {analyticsData.securityData?.httpsUsage || 0}%
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-green-500 h-3 rounded-full transition-all duration-300" 
-                          style={{ width: `${analyticsData.securityData?.httpsUsage || 0}%` }}
+                        <div
+                          className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${
+                              analyticsData.securityData?.httpsUsage || 0
+                            }%`,
+                          }}
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Do Not Track Enabled</span>
-                        <span className="text-sm font-bold text-blue-600">{analyticsData.securityData?.dntEnabled || 0}%</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Do Not Track Enabled
+                        </span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {analyticsData.securityData?.dntEnabled || 0}%
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
-                          style={{ width: `${analyticsData.securityData?.dntEnabled || 0}%` }}
+                        <div
+                          className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${
+                              analyticsData.securityData?.dntEnabled || 0
+                            }%`,
+                          }}
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Ad Blocker Usage</span>
-                        <span className="text-sm font-bold text-orange-600">{analyticsData.securityData?.adBlockerUsage || 0}%</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Ad Blocker Usage
+                        </span>
+                        <span className="text-sm font-bold text-orange-600">
+                          {analyticsData.securityData?.adBlockerUsage || 0}%
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-orange-500 h-3 rounded-full transition-all duration-300" 
-                          style={{ width: `${analyticsData.securityData?.adBlockerUsage || 0}%` }}
+                        <div
+                          className="bg-orange-500 h-3 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${
+                              analyticsData.securityData?.adBlockerUsage || 0
+                            }%`,
+                          }}
                         />
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-center">
                     <div className="text-center p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl">
                       <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">Security Score</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        Security Score
+                      </h3>
                       <div className="text-3xl font-bold text-green-600 mb-2">
-                        {Math.round(((analyticsData.securityData?.httpsUsage || 0) + 
-                                   (100 - (analyticsData.securityData?.adBlockerUsage || 0))) / 2)}
+                        {Math.round(
+                          ((analyticsData.securityData?.httpsUsage || 0) +
+                            (100 -
+                              (analyticsData.securityData?.adBlockerUsage ||
+                                0))) /
+                            2
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600">Overall security rating</p>
+                      <p className="text-sm text-gray-600">
+                        Overall security rating
+                      </p>
                     </div>
                   </div>
                 </div>
