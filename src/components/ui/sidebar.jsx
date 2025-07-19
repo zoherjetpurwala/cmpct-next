@@ -130,11 +130,8 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <div className="w-6 h-6 bg-white rounded-sm"></div>
-              </div>
               <h1
-                className={`${baumans.className} text-2xl font-bold text-white`}
+                className={`${baumans.className} text-4xl font-bold text-white`}
               >
                 cmpct.
               </h1>
