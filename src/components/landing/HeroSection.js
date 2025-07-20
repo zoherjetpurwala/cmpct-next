@@ -7,14 +7,17 @@ const HeroSection = ({ onSignUpClick }) => {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start start", "end start"]
+    offset: ["start start", "end start"],
   });
 
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <section ref={ref} className="min-h-screen flex items-center relative overflow-hidden max-md:pt-24 pt-52">
+    <section
+      ref={ref}
+      className="min-h-screen flex items-center relative overflow-hidden max-md:pt-24 pt-52"
+    >
       {/* Floating Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -24,17 +27,30 @@ const HeroSection = ({ onSignUpClick }) => {
         />
         <motion.div
           animate={{ y: [20, -20, 20], rotate: [0, -5, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
           className="absolute top-40 right-20 w-3 h-3 bg-themeColor/15 rounded-full blur-sm"
         />
         <motion.div
           animate={{ y: [-15, 15, -15], x: [-5, 5, -5] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 4,
+          }}
           className="absolute bottom-40 left-1/4 w-1 h-1 bg-themeColor/25 rounded-full blur-sm"
         />
       </div>
 
-      <motion.div style={{ y, opacity }} className="container mx-auto px-6 text-center relative z-10 max-w-6xl">
+      <motion.div
+        style={{ y, opacity }}
+        className="container mx-auto px-6 text-center relative z-10 max-w-6xl"
+      >
         {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -58,8 +74,8 @@ const HeroSection = ({ onSignUpClick }) => {
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
           className="text-xl md:text-2xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed font-light"
         >
-          Transform long URLs into powerful, trackable links that drive engagement. 
-          Built for modern teams who value{" "}
+          Transform long URLs into powerful, trackable links that drive
+          engagement. Built for modern teams who value{" "}
           <span className="text-themeColor font-medium">simplicity</span> and{" "}
           <span className="text-themeColor font-medium">performance</span>.
         </motion.p>
@@ -115,26 +131,21 @@ const HeroSection = ({ onSignUpClick }) => {
 
             <motion.div
               animate={{ y: [5, -5, 5] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
               className="absolute -bottom-4 -left-4 bg-themeColor-light rounded-lg shadow-lg p-3 border border-themeColor-border/50"
             >
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-themeColor" />
-                <span className="text-sm font-medium text-themeColor-text">+127% CTR</span>
+                <span className="text-sm font-medium text-themeColor-text">
+                  +127% CTR
+                </span>
               </div>
             </motion.div>
-          </div>
-
-          {/* Mobile Image */}
-          <div className="md:hidden">
-            <motion.img
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 1.4 }}
-              src="/dashboard.png"
-              alt="Dashboard preview"
-              className="w-full h-auto rounded-xl shadow-xl border border-gray-200/50"
-            />
           </div>
         </motion.div>
       </motion.div>
