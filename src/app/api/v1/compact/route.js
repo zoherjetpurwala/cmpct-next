@@ -6,6 +6,8 @@ import { supabaseRateLimit } from '@/lib/rateLimitter';
 import { logger } from '@/lib/logger';
 import { metrics } from '@/lib/metrics';
 
+export const runtime = 'nodejs';
+
 const compactUrlSchema = z.object({
   longUrl: z.string()
     .url({ message: "Invalid URL format" })
@@ -43,6 +45,7 @@ const CONFIG = {
   shortCodeLength: 7,
   maxGenerationAttempts: 100,
   apiCallResetPeriod: 60 * 1000,
+  requestSizeLimit: 1024 * 1024, // 1MB - add this missing config
   tiers: {
     free: { linkLimit: 500, apiCallLimit: 10 },
     basic: { linkLimit: 50000, apiCallLimit: 1000 },
@@ -222,9 +225,18 @@ async function createUrlWithTransaction(urlData, user, requestId) {
   }
 }
 
+// IMPORTANT: For App Router, export named functions for each HTTP method
 export async function POST(request) {
   const requestId = generateRequestId();
   const startTime = Date.now();
+  
+  // Add CORS headers for production
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_DOMAIN || '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
   
   try {
     validateEnvironment();
@@ -235,7 +247,10 @@ export async function POST(request) {
         details: process.env.NODE_ENV === 'development' ? envError.message : 'Missing configuration',
         requestId
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   }
   
@@ -247,7 +262,10 @@ export async function POST(request) {
       metrics.increment('api.requests.rejected.size');
       return NextResponse.json(
         { error: 'Request too large', requestId },
-        { status: 413 }
+        { 
+          status: 413,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -259,7 +277,10 @@ export async function POST(request) {
       logger.warn('Invalid JSON in request', { requestId, error: error.message });
       return NextResponse.json(
         { error: 'Invalid JSON format', requestId },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -276,7 +297,10 @@ export async function POST(request) {
           details: validation.error.errors,
           requestId 
         },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -290,7 +314,10 @@ export async function POST(request) {
       metrics.increment('api.requests.rejected.no_auth');
       return NextResponse.json(
         { error: 'Authorization header with Bearer token required', requestId },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -299,7 +326,10 @@ export async function POST(request) {
       metrics.increment('api.requests.rejected.invalid_token');
       return NextResponse.json(
         { error: 'Invalid access token format', requestId },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -321,6 +351,7 @@ export async function POST(request) {
         { 
           status: 429,
           headers: {
+            ...corsHeaders,
             'Retry-After': rateLimitResult.retryAfter.toString(),
             'X-RateLimit-Limit': rateLimitResult.limit.toString(),
             'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
@@ -335,7 +366,10 @@ export async function POST(request) {
       metrics.increment('api.requests.rejected.invalid_user');
       return NextResponse.json(
         { error: 'Invalid or expired access token', requestId },
-        { status: 403 }
+        { 
+          status: 403,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -353,7 +387,10 @@ export async function POST(request) {
       });
       return NextResponse.json(
         { error: limitCheck.error, requestId },
-        { status: 403 }
+        { 
+          status: 403,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -363,7 +400,10 @@ export async function POST(request) {
       logger.error('Short code generation failed', { requestId, error: codeError });
       return NextResponse.json(
         { error: codeError || 'Failed to generate short code', requestId },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -378,7 +418,10 @@ export async function POST(request) {
       logger.error('URL creation failed', { requestId, error: createError?.message });
       return NextResponse.json(
         { error: 'Failed to create short URL', requestId },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -409,6 +452,7 @@ export async function POST(request) {
       },
       {
         headers: {
+          ...corsHeaders,
           'X-Request-ID': requestId,
           'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
         }
@@ -436,6 +480,7 @@ export async function POST(request) {
       { 
         status: 500,
         headers: {
+          ...corsHeaders,
           'X-Request-ID': requestId
         }
       }
@@ -455,7 +500,8 @@ export async function GET(request) {
     requestId
   }, {
     headers: {
-      'X-Request-ID': requestId
+      'X-Request-ID': requestId,
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_DOMAIN || '*',
     }
   });
 }
@@ -464,7 +510,20 @@ export async function HEAD(request) {
   return new NextResponse(null, { 
     status: 200,
     headers: {
-      'X-Service-Status': 'healthy'
+      'X-Service-Status': 'healthy',
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_DOMAIN || '*',
     }
+  });
+}
+
+export async function OPTIONS(request) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_DOMAIN || '*',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
   });
 }
