@@ -147,6 +147,18 @@ const HeroSection = ({ onSignUpClick }) => {
               </div>
             </motion.div>
           </div>
+
+          {/* Mobile Image */}
+          <div className="md:hidden relative border-[8px] border-themeColor/40 ring-8 ring-themeColor/20 rounded-3xl">
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 1.4 }}
+              src="/dashboard.png"
+              alt="Dashboard preview"
+              className="w-full h-auto rounded-xl shadow-xl border border-gray-200/50"
+            />
+          </div>
         </motion.div>
       </motion.div>
     </section>
