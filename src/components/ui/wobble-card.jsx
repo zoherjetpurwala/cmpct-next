@@ -95,15 +95,3 @@ const ShimmerEffect = () => {
 };
 
 export default WobbleCard;
-
-/* Add this to your global CSS or Tailwind config */
-/*
-@keyframes shimmer {
-  0% { transform: translateX(-100%) rotate(12deg); }
-  100% { transform: translateX(300%) rotate(12deg); }
-}
-
-.animate-shimmer {
-  animation: shimmer 3s ease-in-out infinite;
-}
-*/

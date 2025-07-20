@@ -60,7 +60,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import LoadingSpinner from "./ui/loading-spinner";
+import LoadingSpinner from "../common/LoadingComponent";
 
 const AnalyticsComponent = () => {
   const [analyticsData, setAnalyticsData] = useState(null);

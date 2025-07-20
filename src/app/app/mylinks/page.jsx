@@ -1,5 +1,5 @@
 "use client"
-import MyLinksComponent from "@/components/MyLinksComponent";
+import MyLinksComponent from "@/components/pages-components/MyLinksComponent";
 
 const MyLinksPage = () => {
   return (

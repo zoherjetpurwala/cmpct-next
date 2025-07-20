@@ -1,5 +1,5 @@
 "use client"
-import AnalyticsComponent from "@/components/AnalyticsComponent";
+import AnalyticsComponent from "@/components/pages-components/AnalyticsComponent";
 
 const AnalyticsPage = () => {
   return (

@@ -2,10 +2,10 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import Header from "@/components/ui/header";
-import Sidebar from "@/components/ui/sidebar";
+import Header from "@/components/dashboard-components/DashboardNavbar";
+import Sidebar from "@/components/dashboard-components/DashboardSidebar";
 import { useSession } from "next-auth/react";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import LoadingSpinner from "@/components/common/LoadingComponent";
 
 const AppLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

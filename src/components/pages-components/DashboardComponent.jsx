@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useLinkManagement } from "@/hooks/useLinkManagement";
 import { useSession } from "next-auth/react";
-import LoadingSpinner from "./ui/loading-spinner";
+import LoadingSpinner from "../common/LoadingComponent";
 
 const DashboardComponent = () => {
   const [formData, setFormData] = useState({ longUrl: "", header: "" });

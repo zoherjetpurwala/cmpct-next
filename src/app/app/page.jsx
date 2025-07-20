@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import LoadingSpinner from "@/components/common/LoadingComponent";
 import { useSession } from "next-auth/react";
 
 const AppHomePage = () => {

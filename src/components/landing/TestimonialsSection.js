@@ -175,7 +175,7 @@ const TestimonialCard = ({ quote, author, company, role, avatar }) => (
               e.target.nextSibling.style.display = 'flex';
             }}
           />
-          <div className="w-full h-full bg-themeColor-light flex items-center justify-center text-themeColor font-bold text-lg hidden">
+          <div className="w-full h-full bg-themeColor-light flex items-center justify-center text-themeColor font-bold text-lg">
             {author.charAt(0)}
           </div>
         </div>

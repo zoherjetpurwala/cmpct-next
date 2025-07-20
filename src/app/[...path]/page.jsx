@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import LoadingSpinner from "@/components/common/LoadingComponent";
 
 // Enhanced analytics collection on client side
 function collectClientAnalytics() {

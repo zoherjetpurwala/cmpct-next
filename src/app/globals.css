@@ -2,110 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font family */
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
-html, body {
+/* Global HTML & Body Styles */
+html,
+body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
-/* Ensure the sidebar remains visible on larger screens */
+/* Responsive sidebar behavior */
 @media (min-width: 768px) {
   .sidebar-open {
     transform: translateX(0) !important;
   }
 }
 
+/* Utility: text-balance */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Layer: base styles */
 @layer base {
   :root {
-    --theme-primary: 10 79% 61%;        /* #eb6753 */
-    --theme-primary-light: 10 79% 91%;  /* bg-muted */
-    --theme-primary-dark: 10 79% 45%;   /* for hover/focus */
-    --theme-primary-border: 10 79% 80%; /* subtle border */
-    --theme-primary-text: 10 79% 25%;   /* for headings */
-    --theme-primary-foreground: 0 0% 100%; /* white */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 10 79% 61%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 90%;
+
     --radius: 0.5rem;
+
+    --chart-1: 200 100% 50%;
+    --chart-2: 340 82% 52%;
+    --chart-3: 48 94% 60%;
+    --chart-4: 120 61% 45%;
+    --chart-5: 271 91% 65%;
   }
 
   .dark {
-    --theme-primary: 10 79% 61%;
-    --theme-primary-light: 10 79% 25%;
-    --theme-primary-dark: 10 79% 75%;
-    --theme-primary-border: 10 79% 45%;
-    --theme-primary-text: 10 79% 90%;
-    --theme-primary-foreground: 0 0% 98%;
-    --radius: 0.5rem;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 10 79% 61%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  /* Avoid universal reset that breaks components */
+  *, ::before, ::after {
+    border-color: hsl(var(--border));
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
+/* Blinking cursor (for terminal-like UI) */
 .blinking-cursor {
   font-weight: 100;
   font-size: 30px;
   color: white;
-  -webkit-animation: blink 1s infinite;
-  -moz-animation: blink 1s infinite;
-  -animation: blink 1s infinite;
+  animation: blink 1s infinite;
 }
 
-@-webkit-keyframes blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-moz-keyframes blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
+/* Shimmer animation */
 @keyframes shimmer {
-  0% { transform: translateX(-100%) rotate(12deg); }
-  100% { transform: translateX(300%) rotate(12deg); }
+  0% {
+    transform: translateX(-100%) rotate(12deg);
+  }
+  100% {
+    transform: translateX(300%) rotate(12deg);
+  }
 }
 
 .animate-shimmer {
   animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Blink keyframes */
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
