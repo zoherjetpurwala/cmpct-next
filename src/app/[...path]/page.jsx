@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 // Enhanced analytics collection on client side
 function collectClientAnalytics() {
@@ -270,17 +271,13 @@ export default function EnhancedShortUrlPage({ params }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-lg">
-          <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Redirecting...</h2>
-          <p className="text-gray-600">Processing your request</p>
-          <div className="mt-4 text-xs text-gray-500">
-            Analytics: {Object.keys(analytics).length} data points collected
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-themeColor-light/5 via-white to-themeColor-light/10 flex items-center justify-center">
+        <div className="max-w-md w-full px-6">
+          <LoadingSpinner 
+            size="lg"
+            message="Redirecting to your destination..."
+            variant="card"
+          />
         </div>
       </div>
     );
@@ -288,24 +285,39 @@ export default function EnhancedShortUrlPage({ params }) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-pink-100">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50/30 flex items-center justify-center">
+        <div className="max-w-md w-full px-6">
+          <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-red-100">
+            <div className="w-16 h-16 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Link Not Found</h1>
+            
+            <p className="text-gray-600 mb-4">
+              The short URL you&apos;re looking for doesn&apos;t exist or has expired.
+            </p>
+            
+            <div className="bg-red-50 rounded-lg p-3 mb-6">
+              <p className="text-sm text-red-700 font-medium">Error Details:</p>
+              <p className="text-xs text-red-600 mt-1 font-mono">{error}</p>
+            </div>
+            
+            <button 
+              onClick={() => router.push('/')}
+              className="w-full px-6 py-3 bg-themeColor text-white rounded-lg hover:bg-themeColor-dark transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              Go to Homepage
+            </button>
+            
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500">
+                Need help? Contact our support team
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Link Not Found</h1>
-          <p className="text-gray-600 mb-4">
-            The short URL you&apos;re looking for doesn&apos;t exist or has expired.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">Error: {error}</p>
-          <button 
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Go Home
-          </button>
         </div>
       </div>
     );
