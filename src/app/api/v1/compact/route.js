@@ -1,194 +1,470 @@
-// /app/api/v1/compact/route.js
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
+import { supabaseRateLimit } from '@/lib/rateLimitter';
+import { logger } from '@/lib/logger';
+import { metrics } from '@/lib/metrics';
 
-export async function POST(request) {
+const compactUrlSchema = z.object({
+  longUrl: z.string()
+    .url({ message: "Invalid URL format" })
+    .max(2048, { message: "URL too long (max 2048 characters)" })
+    .refine(url => {
+      // Block dangerous protocols and localhost
+      const parsed = new URL(url);
+      return !['javascript:', 'data:', 'file:', 'ftp:'].includes(parsed.protocol) &&
+             !['localhost', '127.0.0.1', '0.0.0.0'].includes(parsed.hostname);
+    }, { message: "URL not allowed" }),
+  
+  header: z.string()
+    .regex(/^[a-zA-Z0-9-_]*$/, { message: "Header can only contain letters, numbers, hyphens, and underscores" })
+    .max(50, { message: "Header too long (max 50 characters)" })
+    .optional()
+    .or(z.literal(''))
+});
+
+function validateEnvironment() {
+  const requiredEnvVars = ['NEXT_PUBLIC_DOMAIN', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_ANON_ROLE_KEY'];
+  const missing = [];
+  
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      missing.push(envVar);
+    }
+  }
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+const CONFIG = {
+  shortCodeLength: 7,
+  maxGenerationAttempts: 100,
+  apiCallResetPeriod: 60 * 1000,
+  tiers: {
+    free: { linkLimit: 500, apiCallLimit: 10 },
+    basic: { linkLimit: 50000, apiCallLimit: 1000 },
+    pro: { linkLimit: 100000, apiCallLimit: 5000 },
+    enterprise: { linkLimit: Infinity, apiCallLimit: Infinity }
+  }
+};
+
+function generateRequestId() {
+  return nanoid(12);
+}
+
+function sanitizeUrl(url) {
   try {
-    const { longUrl, header } = await request.json();
-    const accessToken = request.headers.get('Authorization')?.split(' ')[1];
+    const parsed = new URL(url);
+    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'fbclid', 'gclid'];
+    trackingParams.forEach(param => parsed.searchParams.delete(param));
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
 
-    // Validate required fields
-    if (!longUrl) {
-      return NextResponse.json({ error: 'Long URL is required' }, { status: 400 });
-    }
-
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Access token is required' }, { status: 401 });
-    }
-
-    // Get user by access token
-    const { data: user, error: userError } = await supabase
+async function getUserByToken(accessToken, requestId) {
+  const startTime = Date.now();
+  
+  try {
+    const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('access_token', accessToken)
       .single();
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Invalid access token' }, { status: 403 });
-    }
-
-    const currentDate = new Date();
+    metrics.record('db.user_lookup', Date.now() - startTime);
     
-    // Reset link count if needed (monthly reset)
-    const linkResetDate = new Date(user.link_limit_reset_date);
-    if (linkResetDate < currentDate) {
-      const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-      const { error: resetError } = await supabase
-        .from('users')
-        .update({
-          links_this_month: 0,
-          link_limit_reset_date: nextMonth.toISOString()
-        })
-        .eq('id', user.id);
-      
-      if (resetError) {
-        console.error('Error resetting link count:', resetError);
-      } else {
-        user.links_this_month = 0;
-      }
+    if (error) {
+      logger.warn('User lookup failed', { requestId, error: error.message });
+      return { user: null, error };
     }
+    
+    return { user, error: null };
+  } catch (error) {
+    metrics.record('db.user_lookup', Date.now() - startTime);
+    logger.error('User lookup exception', { requestId, error: error.message });
+    return { user: null, error };
+  }
+}
 
-    // Check link limits based on tier
-    let linkLimit;
-    if (user.current_tier === 'free') linkLimit = 500;
-    else if (user.current_tier === 'basic') linkLimit = 50000;
-    else linkLimit = Infinity;
+async function resetUserLimitsIfNeeded(user, requestId) {
+  const currentDate = new Date();
+  const updates = {};
+  
+  const linkResetDate = new Date(user.link_limit_reset_date);
+  if (linkResetDate < currentDate) {
+    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    updates.links_this_month = 0;
+    updates.link_limit_reset_date = nextMonth.toISOString();
+    user.links_this_month = 0;
+  }
 
-    if (user.links_this_month >= linkLimit) {
-      return NextResponse.json(
-        { error: `Link creation limit reached for the ${user.current_tier} tier.` },
-        { status: 403 }
-      );
+  const apiResetTime = new Date(user.api_call_reset_time);
+  if (currentDate.getTime() - apiResetTime.getTime() >= CONFIG.apiCallResetPeriod) {
+    updates.api_calls_today = 0;
+    updates.api_call_reset_time = currentDate.toISOString();
+    user.api_calls_today = 0;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const { error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', user.id);
+    
+    if (error) {
+      logger.error('Failed to reset user limits', { requestId, userId: user.id, error: error.message });
+    } else {
+      logger.info('User limits reset', { requestId, userId: user.id, updates });
     }
+  }
+  
+  return user;
+}
 
-    // Reset API calls if needed (per minute reset)
-    const apiCallResetPeriod = 60 * 1000; // 1 minute
-    const apiResetTime = new Date(user.api_call_reset_time);
-    if (currentDate.getTime() - apiResetTime.getTime() >= apiCallResetPeriod) {
-      const { error: apiResetError } = await supabase
-        .from('users')
-        .update({
-          api_calls_today: 0,
-          api_call_reset_time: currentDate.toISOString()
-        })
-        .eq('id', user.id);
-      
-      if (apiResetError) {
-        console.error('Error resetting API calls:', apiResetError);
-      } else {
-        user.api_calls_today = 0;
-      }
-    }
+function checkUserLimits(user) {
+  const tierConfig = CONFIG.tiers[user.current_tier] || CONFIG.tiers.free;
+  
+  if (user.links_this_month >= tierConfig.linkLimit) {
+    return {
+      allowed: false,
+      error: `Link creation limit reached for the ${user.current_tier} tier. Current: ${user.links_this_month}/${tierConfig.linkLimit}`
+    };
+  }
+  
+  if (user.api_calls_today >= tierConfig.apiCallLimit) {
+    return {
+      allowed: false,
+      error: `API call limit reached for the ${user.current_tier} tier. Current: ${user.api_calls_today}/${tierConfig.apiCallLimit}`
+    };
+  }
+  
+  return { allowed: true };
+}
 
-    // Check API call limits
-    let apiCallLimit;
-    if (user.current_tier === 'free') apiCallLimit = 10;
-    else if (user.current_tier === 'basic') apiCallLimit = 1000;
-    else apiCallLimit = Infinity;
-
-    if (user.api_calls_today >= apiCallLimit) {
-      return NextResponse.json(
-        { error: `API call limit reached for the ${user.current_tier} tier.` },
-        { status: 403 }
-      );
-    }
-
-    // Generate unique short code
-    let shortCode;
-    let isUnique = false;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (!isUnique && attempts < maxAttempts) {
-      shortCode = nanoid(5);
-      
-      // Check if shortCode already exists
-      const { data: existingUrl, error: checkError } = await supabase
+async function generateUniqueShortCode(requestId) {
+  let attempts = 0;
+  
+  while (attempts < CONFIG.maxGenerationAttempts) {
+    const shortCode = nanoid(CONFIG.shortCodeLength);
+    
+    try {
+      const { data, error } = await supabase
         .from('urls')
         .select('id')
         .eq('short_code', shortCode)
-        .single();
-
-      if (checkError && checkError.code === 'PGRST116') {
-        // No existing URL found, shortCode is unique
-        isUnique = true;
-      } else if (checkError) {
-        console.error('Error checking shortCode uniqueness:', checkError);
+        .maybeSingle();
+      
+      if (error) {
+        logger.error('Database error checking short code', { requestId, shortCode, error: error.message });
         attempts++;
-      } else {
-        // URL exists, try again
-        attempts++;
+        continue;
       }
+      
+      if (!data) {
+        logger.debug('Generated unique short code', { requestId, shortCode, attempts: attempts + 1 });
+        return { shortCode, error: null };
+      }
+      
+      attempts++;
+    } catch (error) {
+      logger.error('Exception checking short code uniqueness', { requestId, error: error.message });
+      attempts++;
     }
+  }
+  
+  logger.error('Failed to generate unique short code', { requestId, attempts });
+  return { shortCode: null, error: 'Unable to generate unique short code after maximum attempts' };
+}
 
-    if (!isUnique) {
-      return NextResponse.json(
-        { error: 'Unable to generate unique short code. Please try again.' },
-        { status: 500 }
-      );
-    }
-
-    // Create the short URL
+async function createUrlWithTransaction(urlData, user, requestId) {
+  try {
     const { data: newUrl, error: urlError } = await supabase
       .from('urls')
       .insert({
-        long_url: longUrl,
-        short_code: shortCode,
+        long_url: urlData.longUrl,
+        short_code: urlData.shortCode,
         user_id: user.id,
-        header: header || null,
-        click_count: 0
+        header: urlData.header || null,
+        click_count: 0,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
 
     if (urlError) {
-      console.error('Error creating URL:', urlError);
-      return NextResponse.json({ error: 'Failed to create short URL' }, { status: 500 });
+      logger.error('Failed to create URL record', { requestId, error: urlError.message });
+      return { url: null, error: urlError };
     }
 
-    // Update user counters
     const { error: updateError } = await supabase
       .from('users')
       .update({
         api_calls_today: user.api_calls_today + 1,
-        links_this_month: user.links_this_month + 1
+        links_this_month: user.links_this_month + 1,
+        link_count: (user.link_count || 0) + 1,
+        last_api_call: new Date().toISOString()
       })
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Error updating user counters:', updateError);
-      // Don't fail the request for this
+      logger.error('Failed to update user counters', { requestId, userId: user.id, error: updateError.message });
     }
 
-    // Build the short URL
-    const shortUrl = header
-      ? `${process.env.NEXT_PUBLIC_DOMAIN}/${header}/${shortCode}`
-      : `${process.env.NEXT_PUBLIC_DOMAIN}/${shortCode}`;
+    return { url: newUrl, error: null };
+  } catch (error) {
+    logger.error('Transaction failed', { requestId, error: error.message });
+    return { url: null, error };
+  }
+}
 
-    return NextResponse.json({ 
-      shortUrl,
+export async function POST(request) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
+  try {
+    validateEnvironment();
+  } catch (envError) {
+    return NextResponse.json(
+      {
+        error: 'Server configuration error',
+        details: process.env.NODE_ENV === 'development' ? envError.message : 'Missing configuration',
+        requestId
+      },
+      { status: 500 }
+    );
+  }
+  
+  logger.info('Compact API request started', { requestId });
+  
+  try {
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > CONFIG.requestSizeLimit) {
+      metrics.increment('api.requests.rejected.size');
+      return NextResponse.json(
+        { error: 'Request too large', requestId },
+        { status: 413 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      metrics.increment('api.requests.rejected.invalid_json');
+      logger.warn('Invalid JSON in request', { requestId, error: error.message });
+      return NextResponse.json(
+        { error: 'Invalid JSON format', requestId },
+        { status: 400 }
+      );
+    }
+
+    const validation = compactUrlSchema.safeParse(body);
+    if (!validation.success) {
+      metrics.increment('api.requests.rejected.validation');
+      logger.warn('Request validation failed', { 
+        requestId, 
+        errors: validation.error.errors 
+      });
+      return NextResponse.json(
+        { 
+          error: 'Validation failed', 
+          details: validation.error.errors,
+          requestId 
+        },
+        { status: 400 }
+      );
+    }
+
+    const { longUrl, header } = validation.data;
+    const sanitizedUrl = sanitizeUrl(longUrl);
+    
+    const normalizedHeader = header && header.trim() !== '' ? header.trim() : null;
+
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      metrics.increment('api.requests.rejected.no_auth');
+      return NextResponse.json(
+        { error: 'Authorization header with Bearer token required', requestId },
+        { status: 401 }
+      );
+    }
+
+    const accessToken = authHeader.split(' ')[1];
+    if (!accessToken || accessToken.length < 10) {
+      metrics.increment('api.requests.rejected.invalid_token');
+      return NextResponse.json(
+        { error: 'Invalid access token format', requestId },
+        { status: 401 }
+      );
+    }
+
+    const rateLimitResult = await supabaseRateLimit.checkLimit(accessToken, requestId);
+    if (!rateLimitResult.allowed) {
+      metrics.increment('api.requests.rejected.rate_limit');
+      logger.warn('Rate limit exceeded', { 
+        requestId, 
+        accessToken: accessToken.substring(0, 8) + '...',
+        limit: rateLimitResult.limit,
+        remaining: rateLimitResult.remaining
+      });
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded', 
+          retryAfter: rateLimitResult.retryAfter,
+          requestId 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter.toString(),
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
+          }
+        }
+      );
+    }
+
+    const { user, error: userError } = await getUserByToken(accessToken, requestId);
+    if (!user) {
+      metrics.increment('api.requests.rejected.invalid_user');
+      return NextResponse.json(
+        { error: 'Invalid or expired access token', requestId },
+        { status: 403 }
+      );
+    }
+
+    logger.info('User authenticated', { requestId, userId: user.id, tier: user.current_tier });
+
+    const updatedUser = await resetUserLimitsIfNeeded(user, requestId);
+
+    const limitCheck = checkUserLimits(updatedUser);
+    if (!limitCheck.allowed) {
+      metrics.increment('api.requests.rejected.limits');
+      logger.warn('User limit exceeded', { 
+        requestId, 
+        userId: updatedUser.id, 
+        error: limitCheck.error 
+      });
+      return NextResponse.json(
+        { error: limitCheck.error, requestId },
+        { status: 403 }
+      );
+    }
+
+    const { shortCode, error: codeError } = await generateUniqueShortCode(requestId);
+    if (!shortCode) {
+      metrics.increment('api.requests.failed.code_generation');
+      logger.error('Short code generation failed', { requestId, error: codeError });
+      return NextResponse.json(
+        { error: codeError || 'Failed to generate short code', requestId },
+        { status: 500 }
+      );
+    }
+
+    const { url: newUrl, error: createError } = await createUrlWithTransaction(
+      { longUrl: sanitizedUrl, shortCode, header: normalizedHeader },
+      updatedUser,
+      requestId
+    );
+
+    if (!newUrl) {
+      metrics.increment('api.requests.failed.database');
+      logger.error('URL creation failed', { requestId, error: createError?.message });
+      return NextResponse.json(
+        { error: 'Failed to create short URL', requestId },
+        { status: 500 }
+      );
+    }
+
+    const shortUrl = normalizedHeader
+      ? `${process.env.NEXT_PUBLIC_DOMAIN}/${normalizedHeader}/${shortCode}`
+      : `${process.env.NEXT_PUBLIC_DOMAIN}/${shortCode}`;
+    const duration = Date.now() - startTime;
+    metrics.record('api.requests.duration', duration);
+    metrics.increment('api.requests.success');
+    
+    logger.info('URL created successfully', {
+      requestId,
+      userId: updatedUser.id,
       shortCode,
-      longUrl,
-      header,
-      clickCount: 0,
-      createdAt: newUrl.created_at
+      duration,
+      hasHeader: !!normalizedHeader
     });
 
-  } catch (error) {
-    console.error('Error in compact API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
+      {
+        shortUrl,
+        shortCode,
+        longUrl: sanitizedUrl,
+        header: normalizedHeader,
+        clickCount: 0,
+        createdAt: newUrl.created_at,
+        requestId
+      },
+      {
+        headers: {
+          'X-Request-ID': requestId,
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
+        }
+      }
+    );
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    metrics.record('api.requests.duration', duration);
+    metrics.increment('api.requests.error');
+    
+    logger.error('Unhandled error in compact API', {
+      requestId,
+      error: error.message,
+      stack: error.stack,
+      duration
+    });
+
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        requestId,
+        ...(process.env.NODE_ENV === 'development' && { details: error.message })
+      },
+      { 
+        status: 500,
+        headers: {
+          'X-Request-ID': requestId
+        }
+      }
     );
   }
 }
 
-// Optional: Add GET method for testing
 export async function GET(request) {
-  return NextResponse.json({ 
-    message: 'Compact API is running',
+  const requestId = generateRequestId();
+  
+  return NextResponse.json({
+    message: 'URL Shortener API',
+    version: '1.0.0',
     methods: ['POST'],
-    endpoint: '/api/v1/compact'
+    endpoint: '/api/v1/compact',
+    status: 'operational',
+    requestId
+  }, {
+    headers: {
+      'X-Request-ID': requestId
+    }
+  });
+}
+
+export async function HEAD(request) {
+  return new NextResponse(null, { 
+    status: 200,
+    headers: {
+      'X-Service-Status': 'healthy'
+    }
   });
 }
