@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
     console.log('Environment:', process.env.NODE_ENV);
     
     // Import modules
-    let supabase, userAgent, geoip;
+    let supabase, userAgent;
     
     try {
       const supabaseModule = await import("@/lib/supabase");
@@ -32,14 +32,6 @@ export async function GET(request, { params }) {
         { error: "Next.js server import failed", details: nextError.message },
         { status: 500 }
       );
-    }
-    
-    try {
-      geoip = await import("geoip-lite");
-      console.log('✓ GeoIP imported');
-    } catch (geoError) {
-      console.warn('⚠ GeoIP import failed (non-critical):', geoError);
-      geoip = { lookup: () => null };
     }
     
     // Validate params
@@ -118,31 +110,145 @@ export async function GET(request, { params }) {
     
     console.log('✓ URL found, processing enhanced analytics...');
     
-    // === ENHANCED ANALYTICS COLLECTION ===
+    // === ENHANCED ANALYTICS COLLECTION WITH GEOJS ===
     
     // 1. BASIC REQUEST DATA
     const headers = request.headers;
     const url = new URL(request.url);
     
-    // 2. IP AND GEOLOCATION
-    const ipAddress = headers.get("x-forwarded-for")?.split(',')[0]?.trim() ||
-                     headers.get("x-real-ip") ||
-                     headers.get("cf-connecting-ip") ||
-                     headers.get("x-client-ip") ||
-                     "Unknown";
+    // 2. IP AND GEOLOCATION WITH GEOJS
+    const rawIP = headers.get("x-forwarded-for")?.split(',')[0]?.trim() ||
+                 headers.get("x-real-ip") ||
+                 headers.get("cf-connecting-ip") ||
+                 headers.get("x-client-ip") ||
+                 "Unknown";
     
-    let geo = null;
-    let timezone = null;
-    try {
-      if (ipAddress !== 'Unknown' && geoip.default) {
-        geo = geoip.default.lookup(ipAddress);
-        if (geo) {
-          timezone = geo.timezone;
-        }
-      }
-    } catch (geoError) {
-      console.warn('⚠ Geo lookup failed:', geoError);
+    console.log('Raw IP received:', rawIP);
+    
+    // Clean IP address (handle IPv6 mapped IPv4)
+    let ipAddress = rawIP;
+    if (ipAddress.startsWith('::ffff:')) {
+      ipAddress = ipAddress.replace('::ffff:', '');
+      console.log('Cleaned IPv6-mapped IP:', ipAddress);
     }
+    
+    // GeoJS location lookup function
+    async function getLocationFromGeoJS(ip) {
+      // Check if IP is local/private
+      const isLocal = ip === '::1' || 
+                     ip === '127.0.0.1' || 
+                     ip.startsWith('192.168.') ||
+                     ip.startsWith('10.') ||
+                     ip.startsWith('172.16.') ||
+                     ip === 'localhost' ||
+                     ip === 'Unknown';
+      
+      if (isLocal) {
+        console.log('⚠️ Skipping geo lookup for local IP:', ip);
+        return null;
+      }
+      
+      try {
+        console.log('🌍 Attempting GeoJS lookup for IP:', ip);
+        
+        const response = await fetch(`https://get.geojs.io/v1/ip/geo/${ip}.json`, {
+          headers: {
+            'User-Agent': 'URL-Shortener/1.0'
+          },
+          // Add timeout to prevent hanging
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (!response.ok) {
+          console.error('GeoJS HTTP error:', response.status, response.statusText);
+          return null;
+        }
+        
+        const data = await response.json();
+        console.log('GeoJS raw response:', data);
+        
+        // Validate response
+        if (!data || data.error) {
+          console.warn('GeoJS returned error or empty data:', data);
+          return null;
+        }
+        
+        const locationData = {
+          country: data.country || 'Unknown',
+          countryCode: data.country_code || 'UN',
+          region: data.region || 'Unknown',
+          city: data.city || 'Unknown',
+          latitude: data.latitude ? parseFloat(data.latitude) : null,
+          longitude: data.longitude ? parseFloat(data.longitude) : null,
+          timezone: data.timezone || 'Unknown',
+          postalCode: 'Unknown', // GeoJS doesn't provide postal codes
+          accuracy: 'geojs',
+          provider: 'geojs.io',
+          isLocal: false
+        };
+        
+        console.log('✅ GeoJS lookup successful:', {
+          country: locationData.country,
+          region: locationData.region,
+          city: locationData.city,
+          timezone: locationData.timezone
+        });
+        
+        return locationData;
+        
+      } catch (error) {
+        console.error('❌ GeoJS lookup failed:', error.message);
+        return null;
+      }
+    }
+    
+    // Get location data
+    const geo = await getLocationFromGeoJS(ipAddress);
+    
+    // Fallback to Cloudflare headers if available
+    let locationData;
+    if (!geo) {
+      const cfCountry = headers.get('cf-ipcountry');
+      if (cfCountry && cfCountry !== 'XX') {
+        console.log('📍 Using Cloudflare location fallback');
+        locationData = {
+          country: cfCountry,
+          countryCode: cfCountry,
+          region: headers.get('cf-region') || 'Unknown',
+          city: headers.get('cf-ipcity') || 'Unknown',
+          latitude: null,
+          longitude: null,
+          timezone: headers.get('cf-timezone') || 'Unknown',
+          postalCode: 'Unknown',
+          accuracy: 'cloudflare',
+          provider: 'cloudflare',
+          isLocal: false
+        };
+      } else {
+        console.log('⚠️ No geo data available, using unknown');
+        locationData = {
+          country: 'Unknown',
+          countryCode: 'UN',
+          region: 'Unknown',
+          city: 'Unknown',
+          latitude: null,
+          longitude: null,
+          timezone: 'Unknown',
+          postalCode: 'Unknown',
+          accuracy: 'unknown',
+          provider: 'none',
+          isLocal: ipAddress === '127.0.0.1' || ipAddress.startsWith('192.168.') || ipAddress.startsWith('10.')
+        };
+      }
+    } else {
+      locationData = geo;
+    }
+    
+    // Add IP info to location data
+    locationData.rawIP = rawIP;
+    locationData.cleanIP = ipAddress;
+    
+    console.log('Final location data:', locationData);
     
     // 3. USER AGENT ANALYSIS
     let agent;
@@ -243,7 +349,7 @@ export async function GET(request, { params }) {
       dayOfMonth: now.getDate(),
       month: now.getMonth() + 1,
       year: now.getFullYear(),
-      timezone: timezone || 'Unknown'
+      timezone: locationData.timezone || 'Unknown'
     };
     
     // 6. TECHNICAL DATA
@@ -286,16 +392,7 @@ export async function GET(request, { params }) {
       user_agent: agent.ua || 'Unknown',
       
       // Store complex data as JSONB
-      location: {
-        country: geo?.country || 'Unknown',
-        region: geo?.region || 'Unknown', 
-        city: geo?.city || 'Unknown',
-        latitude: geo?.ll?.[0] || null,
-        longitude: geo?.ll?.[1] || null,
-        timezone: geo?.timezone || 'Unknown',
-        postalCode: geo?.zip || 'Unknown'
-      },
-      
+      location: locationData,
       device: deviceInfo,
       browser: browserInfo,
       os: osInfo,

@@ -4,19 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 
-// Enhanced analytics collection on client side
 function collectClientAnalytics() {
   const analytics = {};
   
   try {
-    // Screen and display information
     analytics.screenResolution = `${window.screen.width}x${window.screen.height}`;
     analytics.viewport = `${window.innerWidth}x${window.innerHeight}`;
     analytics.colorDepth = window.screen.colorDepth;
     analytics.pixelRatio = window.devicePixelRatio;
     analytics.orientation = window.screen.orientation?.type || 'Unknown';
     
-    // Browser capabilities
     analytics.cookiesEnabled = navigator.cookieEnabled;
     analytics.javaEnabled = navigator.javaEnabled?.() || false;
     analytics.language = navigator.language;
@@ -24,11 +21,9 @@ function collectClientAnalytics() {
     analytics.platform = navigator.platform;
     analytics.onlineStatus = navigator.onLine;
     
-    // Hardware information
     analytics.hardwareConcurrency = navigator.hardwareConcurrency || 'Unknown';
     analytics.maxTouchPoints = navigator.maxTouchPoints || 0;
     
-    // Memory information (if available)
     if ('memory' in performance) {
       analytics.memoryUsage = {
         used: Math.round(performance.memory.usedJSHeapSize / 1048576), // MB
@@ -37,7 +32,6 @@ function collectClientAnalytics() {
       };
     }
     
-    // Network information (if available)
     if ('connection' in navigator) {
       const connection = navigator.connection;
       analytics.networkType = connection.type || 'Unknown';
@@ -47,17 +41,14 @@ function collectClientAnalytics() {
       analytics.saveData = connection.saveData || false;
     }
     
-    // Battery information (if available and user grants permission)
     if ('getBattery' in navigator) {
       navigator.getBattery().then(battery => {
         analytics.batteryLevel = Math.round(battery.level * 100);
         analytics.batteryCharging = battery.charging;
       }).catch(() => {
-        // Battery API not available or permission denied
       });
     }
     
-    // Performance timing
     if ('timing' in performance) {
       const timing = performance.timing;
       analytics.pageLoadTime = timing.loadEventEnd - timing.navigationStart;
@@ -65,7 +56,6 @@ function collectClientAnalytics() {
       analytics.firstPaint = timing.responseEnd - timing.fetchStart;
     }
     
-    // Web vitals (if available)
     if ('getEntriesByType' in performance) {
       const paintEntries = performance.getEntriesByType('paint');
       paintEntries.forEach(entry => {
@@ -78,7 +68,6 @@ function collectClientAnalytics() {
       });
     }
     
-    // Local storage availability
     try {
       localStorage.setItem('test', 'test');
       localStorage.removeItem('test');
@@ -87,7 +76,6 @@ function collectClientAnalytics() {
       analytics.localStorageEnabled = false;
     }
     
-    // Session storage availability
     try {
       sessionStorage.setItem('test', 'test');
       sessionStorage.removeItem('test');
@@ -96,43 +84,32 @@ function collectClientAnalytics() {
       analytics.sessionStorageEnabled = false;
     }
     
-    // Time zone
     analytics.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     analytics.timezoneOffset = new Date().getTimezoneOffset();
     
-    // Do Not Track
     analytics.doNotTrack = navigator.doNotTrack === '1' || 
                           window.doNotTrack === '1' || 
                           navigator.msDoNotTrack === '1';
     
-    // Ad blocker detection (simple check)
     analytics.adBlockerDetected = !document.querySelector('.adsbox') && 
                                  !document.querySelector('#ads') &&
                                  !window.google_ad_client;
     
-    // Dark mode preference
     analytics.prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     analytics.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
-    // Touch support
     analytics.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    // Geolocation support
     analytics.geolocationSupported = 'geolocation' in navigator;
     
-    // Camera/microphone support
     analytics.mediaDevicesSupported = 'mediaDevices' in navigator;
     
-    // WebRTC support
     analytics.webRTCSupported = !!(window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection);
     
-    // Service worker support
     analytics.serviceWorkerSupported = 'serviceWorker' in navigator;
     
-    // Push notification support
     analytics.pushNotificationSupported = 'PushManager' in window;
     
-    // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     analytics.webGLSupported = !!gl;
@@ -148,11 +125,9 @@ function collectClientAnalytics() {
   return analytics;
 }
 
-// Enhanced fetch function with analytics headers
 async function fetchRedirectUrlWithAnalytics(path, analytics, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      // Generate a unique session ID for this visit
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       const headers = {
