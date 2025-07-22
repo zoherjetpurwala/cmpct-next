@@ -77,8 +77,7 @@ const Header = ({ toggleSidebar, activeTab }) => {
   const handleLogout = async () => {
     setLoadingLogout(true);
     try {
-      await signOut({ redirect: false });
-      router.push("/");
+      await signOut({ callbackUrl: "/" });
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {

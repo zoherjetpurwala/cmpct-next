@@ -37,80 +37,81 @@ const Header = ({ onLoginClick, onSignUpClick }) => {
             : "bg-white/60 shadow-lg shadow-themeColor/15 border-themeColor-border/30"
         } backdrop-blur-md rounded-2xl border`}
       >
-        <div className="flex items-center justify-between px-6 py-4 w-full">
-          {/* Logo */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <h1 className={`${baumans.className} text-3xl md:text-4xl text-themeColor-text font-bold`}>
-              cmpct.
-            </h1>
-          </motion.div>
+<div className="flex items-center justify-between px-6 py-4 w-full">
+  {/* Logo (Left) */}
+  <motion.div
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="flex-1 flex items-center gap-2 cursor-pointer"
+  >
+    <h1 className={`${baumans.className} text-3xl md:text-4xl text-themeColor-text font-bold`}>
+      cmpct.
+    </h1>
+  </motion.div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8 flex-1 justify-center">
-            {navItems.map((item, index) => (
-              <motion.a
-                key={item.label}
-                href={item.href}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 * index }}
-                className="relative text-gray-700 hover:text-themeColor font-medium transition-colors duration-300 group"
-              >
-                {item.label}
-                <motion.div
-                  className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-themeColor to-themeColor-dark group-hover:w-full transition-all duration-300"
-                />
-              </motion.a>
-            ))}
-          </nav>
+  {/* Navigation (Center) */}
+  <nav className="hidden lg:flex flex-1 items-center justify-center gap-8">
+    {navItems.map((item, index) => (
+      <motion.a
+        key={item.label}
+        href={item.href}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 * index }}
+        className="relative text-gray-700 hover:text-themeColor font-medium transition-colors duration-300 group"
+      >
+        {item.label}
+        <motion.div
+          className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-themeColor to-themeColor-dark group-hover:w-full transition-all duration-300"
+        />
+      </motion.a>
+    ))}
+  </nav>
 
-          {/* Desktop Auth Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={onLoginClick}
-              className="text-gray-700 hover:text-themeColor hover:bg-themeColor-light font-medium transition-all duration-300"
-            >
-              Login
-            </Button>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={onSignUpClick}
-                className="bg-gradient-to-r from-themeColor to-themeColor-dark hover:from-themeColor-dark hover:to-themeColor text-white shadow-lg shadow-themeColor/25 font-medium px-6 transition-all duration-300"
-              >
-                Sign Up
-              </Button>
-            </motion.div>
-          </div>
+  {/* Auth Buttons (Right) */}
+  <div className="flex-1 hidden lg:flex items-center justify-end gap-3">
+    <Button
+      variant="ghost"
+      onClick={onLoginClick}
+      className="text-gray-700 hover:text-themeColor hover:bg-themeColor-light font-medium transition-all duration-300"
+    >
+      Login
+    </Button>
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <Button
+        onClick={onSignUpClick}
+        className="bg-gradient-to-r from-themeColor to-themeColor-dark hover:from-themeColor-dark hover:to-themeColor text-white shadow-lg shadow-themeColor/25 font-medium px-6 transition-all duration-300"
+      >
+        Sign Up
+      </Button>
+    </motion.div>
+  </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden p-2 hover:bg-themeColor-light"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isMobileMenuOpen ? "close" : "menu"}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gray-700" />
-                ) : (
-                  <Menu className="w-6 h-6 text-gray-700" />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </Button>
-        </div>
+  {/* Mobile Menu Button */}
+  <Button
+    variant="ghost"
+    size="sm"
+    className="lg:hidden p-2 hover:bg-themeColor-light"
+    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+  >
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={isMobileMenuOpen ? "close" : "menu"}
+        initial={{ rotate: -90, opacity: 0 }}
+        animate={{ rotate: 0, opacity: 1 }}
+        exit={{ rotate: 90, opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        {isMobileMenuOpen ? (
+          <X className="w-6 h-6 text-gray-700" />
+        ) : (
+          <Menu className="w-6 h-6 text-gray-700" />
+        )}
+      </motion.div>
+    </AnimatePresence>
+  </Button>
+</div>
+
       </motion.header>
 
       {/* Mobile Menu Overlay */}
