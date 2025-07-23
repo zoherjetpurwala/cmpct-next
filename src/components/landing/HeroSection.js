@@ -2,6 +2,12 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { Poppins } from "next/font/google";
+
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700", "800", "900"],
+  subsets: ["latin"],
+});
 
 const HeroSection = ({ onSignUpClick }) => {
   const ref = useRef(null);
@@ -51,12 +57,12 @@ const HeroSection = ({ onSignUpClick }) => {
         style={{ y, opacity }}
         className="container mx-auto px-6 text-center relative z-10 max-w-6xl"
       >
-        {/* Headline */}
+        {/* Headline with Different Font Options */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-          className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
+          className={`text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight ${poppins.className}`}
         >
           <span className="bg-gradient-to-br from-gray-800 via-themeColor-text to-themeColor bg-clip-text text-transparent">
             Shrink Your Links,
