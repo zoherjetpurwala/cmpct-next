@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { sendVerificationEmail } from "@/lib/email-service";
 
 export async function POST(req) {
   try {
@@ -29,18 +30,34 @@ export async function POST(req) {
       );
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const { data: existingUser } = await supabase
       .from("users")
-      .select("id")
+      .select("id, email_verified")
       .eq("email", email)
       .single();
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "This email is already registered" },
-        { status: 400 }
-      );
+      if (existingUser.email_verified) {
+        return NextResponse.json(
+          { error: "This email is already registered and verified" },
+          { status: 400 }
+        );
+      } else {
+        return NextResponse.json(
+          { error: "This email is already registered but not verified. Please check your email for verification link." },
+          { status: 400 }
+        );
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -59,7 +76,11 @@ export async function POST(req) {
       isUnique = !existingToken;
     }
 
-    // Create user
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create user (not verified initially)
     const { data: newUser, error: userError } = await supabase
       .from("users")
       .insert({
@@ -71,7 +92,10 @@ export async function POST(req) {
         current_tier: "free",
         api_calls_today: 0,
         link_count: 0,
-        links_this_month: 0
+        links_this_month: 0,
+        email_verified: false,
+        verification_token: verificationToken,
+        verification_expires: verificationExpiry.toISOString()
       })
       .select()
       .single();
@@ -106,8 +130,21 @@ export async function POST(req) {
       throw new Error(updateError.message);
     }
 
+    // Send verification email
+    const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
+    
+    const emailResult = await sendVerificationEmail(email, name, verificationUrl);
+    
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      // Don't fail the signup if email fails - user can request resend
+    }
+
     return NextResponse.json(
-      { message: "User created successfully" },
+      { 
+        message: "User created successfully. Please check your email to verify your account.",
+        requiresVerification: true 
+      },
       { status: 201 }
     );
   } catch (error) {

@@ -22,6 +22,11 @@ export const authOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Check if email is verified
+        if (!user.email_verified) {
+          throw new Error("Please verify your email before signing in");
+        }
+
         const isMatch = await bcrypt.compare(
           credentials.password,
           user.password
@@ -37,6 +42,7 @@ export const authOptions = {
           name: user.name,
           accessToken: user.access_token,
           currentTier: user.current_tier,
+          emailVerified: user.email_verified,
         };
       },
     }),
@@ -47,6 +53,7 @@ export const authOptions = {
         token.id = user.id;
         token.accessToken = user.accessToken;
         token.currentTier = user.currentTier;
+        token.emailVerified = user.emailVerified;
       }
       return token;
     },
@@ -54,6 +61,7 @@ export const authOptions = {
       session.user.id = token.id;
       session.user.accessToken = token.accessToken;
       session.user.currentTier = token.currentTier;
+      session.user.emailVerified = token.emailVerified;
       return session;
     },
   },
