@@ -186,19 +186,6 @@ const AuthModal = ({
                   autoComplete="name"
                   className="border-gray-300 focus:border-themeColor focus:ring-themeColor/20"
                 />
-
-                <Label htmlFor="signup-phone" className="text-themeColor-text font-medium">
-                  Phone
-                </Label>
-                <Input
-                  id="signup-phone"
-                  name="phone"
-                  type="tel"
-                  pattern="^\\d{10}$"
-                  required
-                  autoComplete="tel"
-                  className="border-gray-300 focus:border-themeColor focus:ring-themeColor/20"
-                />
               </>
             )}
 

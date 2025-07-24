@@ -6,19 +6,12 @@ import { sendVerificationEmail } from "@/lib/email-service";
 
 export async function POST(req) {
   try {
-    const { email, password, name, phone } = await req.json();
+    const { email, password, name } = await req.json();
 
     // Basic input validation
-    if (!email || !password || !name || !phone) {
+    if (!email || !password || !name) {
       return NextResponse.json(
         { error: "All fields are required" },
-        { status: 400 }
-      );
-    }
-
-    if (!/^\d{10}$/.test(phone)) {
-      return NextResponse.json(
-        { error: "Phone must be a 10-digit number" },
         { status: 400 }
       );
     }
@@ -87,7 +80,6 @@ export async function POST(req) {
         email,
         password: hashedPassword,
         name,
-        phone,
         access_token: accessToken,
         current_tier: "free",
         api_calls_today: 0,
