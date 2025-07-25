@@ -61,23 +61,29 @@ export default function LandingPage() {
   const handleSignUp = useCallback(async (e) => {
     e.preventDefault();
     setAuthState((prev) => ({ ...prev, isLoading: true }));
-
+  
     const formData = Object.fromEntries(new FormData(e.target));
-
+  
     try {
       const response = await fetch(`/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
+  
       if (response.ok) {
-        toast.success("Sign-up successful. Please log in.");
-        setAuthState((prev) => ({
-          ...prev,
-          isSignUpModalOpen: false,
-          isLoginModalOpen: true,
-        }));
+        const responseData = await response.json();
+        
+        if (responseData?.requiresVerification) {
+          return { requiresVerification: true };
+        } else {
+          toast.success("Sign-up successful. Please log in.");
+          setAuthState((prev) => ({
+            ...prev,
+            isSignUpModalOpen: false,
+            isLoginModalOpen: true,
+          }));
+        }
       } else {
         const errorData = await response.json();
         toast.error(errorData?.message || "Sign-up failed. Please try again.");
@@ -89,6 +95,22 @@ export default function LandingPage() {
       setAuthState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);
+  
+  const switchToLogin = () => {
+    setAuthState((prev) => ({
+      ...prev,
+      isSignUpModalOpen: false,
+      isLoginModalOpen: true,
+    }));
+  };
+  
+  const switchToSignUp = () => {
+    setAuthState((prev) => ({
+      ...prev,
+      isLoginModalOpen: false,
+      isSignUpModalOpen: true,
+    }));
+  };
 
   const openLoginModal = () =>
     setAuthState((prev) => ({ ...prev, isLoginModalOpen: true }));
@@ -156,6 +178,9 @@ export default function LandingPage() {
         description="Enter your credentials to access your account"
         buttonText="Login"
         isLoading={authState.isLoading}
+        onTypeChange={(type) => {
+          if (type === "SignUp") switchToSignUp();
+        }}
       />
 
       <AuthModal
@@ -169,6 +194,9 @@ export default function LandingPage() {
         description="Enter your details to create a new account"
         buttonText="Sign Up"
         isLoading={authState.isLoading}
+        onTypeChange={(type) => {
+          if (type === "Login") switchToLogin();
+        }}
       />
     </div>
   );
