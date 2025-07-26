@@ -1,7 +1,8 @@
 // app/api/v1/[...path]/route.js
 import { NextResponse } from "next/server";
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     console.log('=== Enhanced Analytics API Route Start ===');
     console.log('Params:', params);

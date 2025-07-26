@@ -267,7 +267,7 @@ const MyLinksComponent = () => {
                     }
                   </p>
                   {!(searchTerm || Object.values(selectedFilters).some(f => f !== "all" && f.length > 0)) && (
-                    <Button className="bg-themeColor hover:bg-themeColor-dark">
+                    <Button className="bg-themeColor hover:bg-themeColor-dark text-white">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Link
                     </Button>

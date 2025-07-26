@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Font family */
 body {
@@ -31,80 +29,106 @@ body {
   }
 }
 
-/* Layer: base styles */
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+@theme {
+  /* Extended theme color palette - Complete spectrum */
+  --color-themeColor-50: #fef7f6;
+  --color-themeColor-100: #fce9e6;
+  --color-themeColor-200: #f9d7d0;
+  --color-themeColor-300: #f3b1a8;
+  --color-themeColor-400: #ed8a7a;
+  --color-themeColor-500: #eb6753; /* Original theme color */
+  --color-themeColor-600: #d85a47;
+  --color-themeColor-700: #c44c39;
+  --color-themeColor-800: #a03d2e;
+  --color-themeColor-900: #7d2f23;
+  --color-themeColor-950: #5a241c;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+  /* Legacy naming (keeping for backward compatibility) */
+  --color-themeColor: #eb6753;
+  --color-themeColor-light: #fce9e6;
+  --color-themeColor-dark: #c44c39;
+  --color-themeColor-text: #5a241c;
+  --color-themeColor-border: #f3b1a8;
+  --color-themeColor-muted: #f9d7d0;
+  
+  /* Alternative theme variations */
+  --color-themeColor-accent: #ff7a65;
+  --color-themeColor-subtle: #f5ccc5;
+  --color-themeColor-contrast: #ffffff;
+  --color-themeColor-shadow: rgba(235, 103, 83, 0.2);
+  --color-themeColor-hover: #d85a47;
+  --color-themeColor-active: #c44c39;
+  --color-themeColor-disabled: #f3b1a8;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+  /* Semantic color variations */
+  --color-themeColor-success: #10b981;
+  --color-themeColor-warning: #f59e0b;
+  --color-themeColor-error: #ef4444;
+  --color-themeColor-info: #3b82f6;
+  
+  /* Gradient stops for smooth transitions */
+  --color-themeColor-gradient-from: #eb6753;
+  --color-themeColor-gradient-via: #f3b1a8;
+  --color-themeColor-gradient-to: #fce9e6;
+  
+  /* OKLCH color space variations (better for color interpolation) */
+  --color-primary: oklch(0.74 0.17 40.24); /* Original */
+  --color-primary-light: oklch(0.85 0.12 40.24);
+  --color-primary-dark: oklch(0.63 0.22 40.24);
+  --color-primary-muted: oklch(0.78 0.08 40.24);
+  --color-secondary: oklch(0.49 0.08 205.88);
+  --color-secondary-light: oklch(0.60 0.06 205.88);
+  --color-secondary-dark: oklch(0.38 0.10 205.88);
 
-    --primary: 10 79% 61%;
-    --primary-foreground: 0 0% 100%;
+  /* Theme color with alpha variations */
+  --color-themeColor-alpha-10: rgba(235, 103, 83, 0.1);
+  --color-themeColor-alpha-20: rgba(235, 103, 83, 0.2);
+  --color-themeColor-alpha-30: rgba(235, 103, 83, 0.3);
+  --color-themeColor-alpha-40: rgba(235, 103, 83, 0.4);
+  --color-themeColor-alpha-50: rgba(235, 103, 83, 0.5);
+  --color-themeColor-alpha-60: rgba(235, 103, 83, 0.6);
+  --color-themeColor-alpha-70: rgba(235, 103, 83, 0.7);
+  --color-themeColor-alpha-80: rgba(235, 103, 83, 0.8);
+  --color-themeColor-alpha-90: rgba(235, 103, 83, 0.9);
+}
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 90%;
-
-    --radius: 0.5rem;
-
-    --chart-1: 200 100% 50%;
-    --chart-2: 340 82% 52%;
-    --chart-3: 48 94% 60%;
-    --chart-4: 120 61% 45%;
-    --chart-5: 271 91% 65%;
-  }
-
-  .dark {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-
-    --card: 240 10% 10%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 10%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 10 79% 61%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
-
-  /* Avoid universal reset that breaks components */
-  *, ::before, ::after {
-    border-color: hsl(var(--border));
-  }
+/* Custom utility classes for theme colors */
+@layer utilities {
+  .bg-theme-50 { background-color: var(--color-themeColor-50); }
+  .bg-theme-100 { background-color: var(--color-themeColor-100); }
+  .bg-theme-200 { background-color: var(--color-themeColor-200); }
+  .bg-theme-300 { background-color: var(--color-themeColor-300); }
+  .bg-theme-400 { background-color: var(--color-themeColor-400); }
+  .bg-theme-500 { background-color: var(--color-themeColor-500); }
+  .bg-theme-600 { background-color: var(--color-themeColor-600); }
+  .bg-theme-700 { background-color: var(--color-themeColor-700); }
+  .bg-theme-800 { background-color: var(--color-themeColor-800); }
+  .bg-theme-900 { background-color: var(--color-themeColor-900); }
+  .bg-theme-950 { background-color: var(--color-themeColor-950); }
+  
+  .text-theme-50 { color: var(--color-themeColor-50); }
+  .text-theme-100 { color: var(--color-themeColor-100); }
+  .text-theme-200 { color: var(--color-themeColor-200); }
+  .text-theme-300 { color: var(--color-themeColor-300); }
+  .text-theme-400 { color: var(--color-themeColor-400); }
+  .text-theme-500 { color: var(--color-themeColor-500); }
+  .text-theme-600 { color: var(--color-themeColor-600); }
+  .text-theme-700 { color: var(--color-themeColor-700); }
+  .text-theme-800 { color: var(--color-themeColor-800); }
+  .text-theme-900 { color: var(--color-themeColor-900); }
+  .text-theme-950 { color: var(--color-themeColor-950); }
+  
+  .border-theme-50 { border-color: var(--color-themeColor-50); }
+  .border-theme-100 { border-color: var(--color-themeColor-100); }
+  .border-theme-200 { border-color: var(--color-themeColor-200); }
+  .border-theme-300 { border-color: var(--color-themeColor-300); }
+  .border-theme-400 { border-color: var(--color-themeColor-400); }
+  .border-theme-500 { border-color: var(--color-themeColor-500); }
+  .border-theme-600 { border-color: var(--color-themeColor-600); }
+  .border-theme-700 { border-color: var(--color-themeColor-700); }
+  .border-theme-800 { border-color: var(--color-themeColor-800); }
+  .border-theme-900 { border-color: var(--color-themeColor-900); }
+  .border-theme-950 { border-color: var(--color-themeColor-950); }
 }
 
 /* Blinking cursor (for terminal-like UI) */

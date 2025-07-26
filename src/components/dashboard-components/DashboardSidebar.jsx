@@ -121,7 +121,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeTab, setActiveTab }) => {
         variants={sidebarVariants}
         initial={false}
         animate={isMobile ? (isSidebarOpen ? "open" : "closed") : false}
-        className={`w-72 bg-gradient-to-br from-themeColor-text to-themeColor-dark text-white 
+        className={`w-72 bg-gradient-to-br from-themeColor-700 to-themeColor-800 text-white 
           z-30 shadow-2xl rounded-r-3xl
           fixed inset-y-0 left-0 
           md:translate-x-0 md:top-0 md:block`}

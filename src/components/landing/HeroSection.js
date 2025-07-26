@@ -64,7 +64,7 @@ const HeroSection = ({ onSignUpClick }) => {
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           className={`text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight ${poppins.className}`}
         >
-          <span className="bg-gradient-to-br from-gray-800 via-themeColor-text to-themeColor bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-gray-800 via-themeColor-800 to-themeColor-400 bg-clip-text text-transparent">
             Shrink Your Links,
           </span>
           <br />
@@ -114,10 +114,12 @@ const HeroSection = ({ onSignUpClick }) => {
           <div className="absolute inset-0 bg-gradient-to-r from-themeColor/20 to-themeColor-dark/15 blur-3xl opacity-30 rounded-3xl" />
 
           {/* Desktop Image */}
-          <div className="relative hidden md:block border-[8px] border-themeColor/40 ring-8 ring-themeColor/20 rounded-3xl">
-            <motion.img
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative hidden md:block border-[8px] border-themeColor/40 ring-8 ring-themeColor/20 rounded-3xl"
+          >
+            <img
               src="/dashboard.png"
               alt="Dashboard preview"
               className="w-full h-auto rounded-2xl shadow-2xl border border-gray-200/50 backdrop-blur-sm"
@@ -152,7 +154,7 @@ const HeroSection = ({ onSignUpClick }) => {
                 </span>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
 
           {/* Mobile Image */}
           <div className="md:hidden relative border-[8px] border-themeColor/40 ring-8 ring-themeColor/20 rounded-3xl">

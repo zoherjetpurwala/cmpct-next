@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/common/LoadingComponent";
 
@@ -195,7 +195,8 @@ async function fetchRedirectUrlWithAnalytics(path, analytics, retries = 3) {
   }
 }
 
-export default function EnhancedShortUrlPage({ params }) {
+export default function EnhancedShortUrlPage(props) {
+  const params = use(props.params);
   const { path } = params;
   const router = useRouter();
   const [error, setError] = useState(null);
